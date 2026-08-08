@@ -7,4 +7,5 @@ authors:
     given-names: Aarav
 year: 2026
 license: MIT
+repository-code: "https://github.com/aaravvd/hydrofoil-neural-surrogates"
 abstract: "Code and reproducibility workflow for benchmarking CNN-U-Net, physics-regularized MLP, FNO, and DeepONet surrogates for hydrofoil RANS flow, cavitation-risk screening, and shape optimization."
