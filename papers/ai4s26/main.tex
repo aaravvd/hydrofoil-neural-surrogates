@@ -467,9 +467,12 @@ Direct CFD & 4415 & 25.57 & -- & 29.89 & +4.32 & 16.9\% \\
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.94\textwidth]{figures/aso_results.pdf}
-\caption{Top: starting foils (dashed) and selected shapes. Bottom left:
-surrogate predictions, CFD endpoint checks, and the direct-CFD result. Bottom
-right: best-so-far objective during each direct OpenFOAM search.}
+\caption{Top: selected shapes against the same dashed NACA 2412 geometric
+reference. The common reference supports shape comparison and is not
+necessarily the optimizer initializer; actual initializers are listed in
+Table~\ref{tab:allstarts}. Bottom left: surrogate predictions, CFD endpoint
+checks, and the direct-CFD result. Bottom right: best-so-far objective during
+each direct OpenFOAM search.}
 \label{fig:optimization}
 \end{figure*}
 

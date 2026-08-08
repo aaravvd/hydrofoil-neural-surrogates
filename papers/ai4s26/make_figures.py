@@ -12,6 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = Path(__file__).resolve().parent / "figures"
+SIM_OUT = ROOT / "papers/sim2science26/figures"
 os.environ.setdefault("MPLCONFIGDIR", str(ROOT / ".matplotlib-cache"))
 sys.path.insert(0, str(ROOT))
 
@@ -133,13 +134,12 @@ def aso_results_figure() -> None:
 
     design_rows = [(LABELS[model], by_model[model], COLORS[model]) for model in MODELS]
     design_rows.append(("Direct OpenFOAM", cfd_best, "#222222"))
+    reference_x, reference_y = coordinates("2412")
 
     fig = plt.figure(figsize=(8.2, 4.7), constrained_layout=True)
     grid = fig.add_gridspec(2, 10, height_ratios=[0.9, 1.55])
     for index, (label, row, color) in enumerate(design_rows):
         ax = fig.add_subplot(grid[0, 2 * index:2 * index + 2])
-        start = row["start"]
-        start_x, start_y = coordinates(start)
         if label == "Direct OpenFOAM":
             m, p, thickness = (
                 float(row["best_m"]), float(row["best_p"]), float(row["best_t"])
@@ -147,11 +147,11 @@ def aso_results_figure() -> None:
         else:
             m, p, thickness = float(row["m"]), float(row["p"]), float(row["t"])
         opt_x, opt_y = coordinates_from_parameters(m, p, thickness)
-        ax.plot(start_x, start_y, color="#777777", linestyle="--", linewidth=1.2,
-                label=f"NACA {start}")
+        ax.plot(reference_x, reference_y, color="#777777", linestyle="--", linewidth=1.2,
+                label="NACA 2412 reference")
         ax.plot(opt_x, opt_y, color=color, linewidth=1.8, label="optimized")
         ax.fill(opt_x, opt_y, color=color, alpha=0.10)
-        ax.set_title(f"{label}\nNACA {start} start", fontsize=7.5, pad=2)
+        ax.set_title(label, fontsize=7.5, pad=2)
         ax.set_xlim(-0.03, 1.03)
         ax.set_ylim(-0.12, 0.14)
         ax.set_aspect("equal", adjustable="box")
@@ -173,7 +173,7 @@ def aso_results_figure() -> None:
     validated = [float(by_model[model]["openfoam_L_over_D"]) for model in MODELS] + [
         float(cfd_best["best_L_over_D"])
     ]
-    ax.bar(x - width, baseline_values, width, label="OpenFOAM start", color="#A7A7A7")
+    ax.bar(x - width, baseline_values, width, label="OpenFOAM baseline", color="#A7A7A7")
     ax.bar(x[:4], predicted, width, label="Surrogate prediction", color="#5B8DB8")
     bars = ax.bar(x + width, validated, width, label="OpenFOAM result", color="#E1812C")
     ax.set_ylabel("Lift-to-drag ratio")
@@ -202,6 +202,8 @@ def aso_results_figure() -> None:
     ax.legend(frameon=False, fontsize=7)
     fig.savefig(OUT / "aso_results.pdf", bbox_inches="tight")
     fig.savefig(OUT / "aso_results.png", dpi=240, bbox_inches="tight")
+    SIM_OUT.mkdir(parents=True, exist_ok=True)
+    fig.savefig(SIM_OUT / "aso_results.pdf", bbox_inches="tight")
     plt.close(fig)
 
 
