@@ -22,6 +22,7 @@ data/openfoam_cases/
 /data/normalization.npy
 /openfoam_cases/
 /figures/
+/zenodo_release/
 
 # Generated optimization solver cases can be reconstructed from summaries.
 hso_results/**/openfoam_cases/
