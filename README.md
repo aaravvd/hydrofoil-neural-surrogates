@@ -171,17 +171,17 @@ replacement for multiphase cavitating RANS labels such as vapor volume fraction,
 cavity length, or shedding dynamics. To train those, add solver outputs such as
 `alpha.vapor` to the OpenFOAM extraction and include that field in `--targets`.
 
-## Publishing on GitHub
+## Archival Release Checklist
 
-The source repository should include code, configurations, paper sources,
-compact CSV/JSON results, and final figures. Regenerable CFD artifacts are
-excluded by `.gitignore` because the corrected dataset is about 2.4 GB.
+This repository includes code, configurations, paper sources, compact CSV/JSON
+results, and final figures. Regenerable CFD artifacts are excluded by
+`.gitignore` because the corrected dataset is about 2.4 GB.
 
-Before making the repository public:
+Before creating the paper's tagged archival release:
 
-1. Add the public repository URL and release version to `CITATION.cff`.
-2. Deposit the CFD dataset and checkpoints in Zenodo or a similar archive.
-3. Add the archive DOI and SHA-256 checksums to `REPRODUCIBILITY.md`.
+1. Deposit the CFD dataset and checkpoints in Zenodo or a similar archive.
+2. Add the archive DOI and SHA-256 checksums to `REPRODUCIBILITY.md`.
+3. Add the release version to `CITATION.cff`.
 4. Create a tagged GitHub release that matches the paper submission.
 
 This layout keeps the code easy to clone while preserving an immutable copy of
