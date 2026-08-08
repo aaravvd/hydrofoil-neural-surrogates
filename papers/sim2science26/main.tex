@@ -204,16 +204,15 @@ Measured training times are 868, 104, 547, and 54~s for CNN-U-Net, the physics-r
 
 Figure~\ref{fig:pressure} shows a representative validation case from the unseen NACA 0015 family. The
 pointwise models reproduce the leading-edge pressure structure most closely;
-CNN-U-Net smooths the extrema and FNO introduces spatial texture. The distinct
-error color scales in the lower row are retained to expose each model's error
-structure rather than visually equalizing models with very different ranges.
+CNN-U-Net smooths the extrema and FNO introduces spatial texture. A common
+color scale makes those differences directly comparable across all five panels.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.82\textwidth]{figures/heldout_pressure.png}
-\caption{Absolute-pressure prediction for a representative validation case from the NACA 0015
-case (case 160), followed by per-model absolute error. All prediction panels
-share the truth color scale; error panels use individually labeled scales.}
+\includegraphics[width=0.98\textwidth]{figures/heldout_pressure.png}
+\caption{Absolute-pressure prediction for a representative NACA 0015
+validation case (case 160), shown over $x/c\in[-0.25,1.25]$ and
+$y/c\in[-0.375,0.375]$. Every panel uses the same color scale.}
 \label{fig:pressure}
 \end{figure*}
 
@@ -244,9 +243,8 @@ $(0.0407,0.417,0.144,3.98^\circ)$.
 \includegraphics[width=0.82\textwidth]{figures/aso_results.pdf}
 \caption{Top: selected shapes against the same dashed NACA 2412 geometric
 reference. The reference is for visual comparison, not necessarily the
-optimizer initializer. Bottom left: surrogate predictions, CFD endpoint
-checks, and direct CFD. Bottom right: direct-CFD convergence from all three
-initializers.}
+optimizer initializer. Bottom: initial-foil OpenFOAM values, surrogate
+predictions, fresh OpenFOAM endpoint checks, and direct CFD.}
 \label{fig:optimization}
 \end{figure}
 

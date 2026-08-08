@@ -136,8 +136,8 @@ def aso_results_figure() -> None:
     design_rows.append(("Direct OpenFOAM", cfd_best, "#222222"))
     reference_x, reference_y = coordinates("2412")
 
-    fig = plt.figure(figsize=(8.2, 4.7), constrained_layout=True)
-    grid = fig.add_gridspec(2, 10, height_ratios=[0.9, 1.55])
+    fig = plt.figure(figsize=(8.2, 4.5), constrained_layout=True)
+    grid = fig.add_gridspec(2, 10, height_ratios=[1.15, 1.55])
     for index, (label, row, color) in enumerate(design_rows):
         ax = fig.add_subplot(grid[0, 2 * index:2 * index + 2])
         if label == "Direct OpenFOAM":
@@ -151,7 +151,7 @@ def aso_results_figure() -> None:
                 label="NACA 2412 reference")
         ax.plot(opt_x, opt_y, color=color, linewidth=1.8, label="optimized")
         ax.fill(opt_x, opt_y, color=color, alpha=0.10)
-        ax.set_title(label, fontsize=7.5, pad=2)
+        ax.set_title(f"{label}\nNACA 2412 ref.", fontsize=7.5, pad=2)
         ax.set_xlim(-0.03, 1.03)
         ax.set_ylim(-0.12, 0.14)
         ax.set_aspect("equal", adjustable="box")
@@ -160,7 +160,7 @@ def aso_results_figure() -> None:
         ax.tick_params(labelsize=7)
         ax.grid(alpha=0.18, linewidth=0.5)
 
-    ax = fig.add_subplot(grid[1, :6])
+    ax = fig.add_subplot(grid[1, :])
     x = np.arange(5)
     width = 0.27
     direct_start = next(
@@ -173,7 +173,7 @@ def aso_results_figure() -> None:
     validated = [float(by_model[model]["openfoam_L_over_D"]) for model in MODELS] + [
         float(cfd_best["best_L_over_D"])
     ]
-    ax.bar(x - width, baseline_values, width, label="OpenFOAM baseline", color="#A7A7A7")
+    ax.bar(x - width, baseline_values, width, label="Initial foil (OpenFOAM)", color="#A7A7A7")
     ax.bar(x[:4], predicted, width, label="Surrogate prediction", color="#5B8DB8")
     bars = ax.bar(x + width, validated, width, label="OpenFOAM result", color="#E1812C")
     ax.set_ylabel("Lift-to-drag ratio")
@@ -187,19 +187,6 @@ def aso_results_figure() -> None:
         ax.text(bar.get_x() + bar.get_width() / 2, value + 1.0,
                 f"{value:.2f}", ha="center", va="bottom", fontsize=6.5)
 
-    ax = fig.add_subplot(grid[1, 6:])
-    for start, color in zip(["0012", "2412", "4415"], ["#2878B5", "#D95F02", "#4E9F3D"]):
-        values = [
-            float(row["objective"]) for row in cfd_trace
-            if row["start"] == start and row["status"] == "ok"
-        ]
-        if values:
-            ax.step(np.arange(1, len(values) + 1), np.maximum.accumulate(values),
-                    where="post", linewidth=1.5, label=f"NACA {start}", color=color)
-    ax.set_xlabel("OpenFOAM evaluations")
-    ax.set_ylabel("Best objective")
-    ax.grid(alpha=0.25, linewidth=0.6)
-    ax.legend(frameon=False, fontsize=7)
     fig.savefig(OUT / "aso_results.pdf", bbox_inches="tight")
     fig.savefig(OUT / "aso_results.png", dpi=240, bbox_inches="tight")
     SIM_OUT.mkdir(parents=True, exist_ok=True)
@@ -215,6 +202,11 @@ def copy_existing() -> None:
     }
     for source, destination in sources.items():
         shutil.copy2(source, destination)
+    SIM_OUT.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / "figures/corrected_model_predictions_heldout/case_160_p_predictions.png",
+        SIM_OUT / "heldout_pressure.png",
+    )
 
 
 def main() -> None:

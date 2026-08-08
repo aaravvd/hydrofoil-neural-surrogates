@@ -74,7 +74,7 @@ def main() -> None:
         for model_name, bundle in checkpoints.items():
             predictions[model_name] = predict_case(torch, bundle, path, args.field, args.batch_size, device)
         out_path = args.output_dir / f"{path.name.replace('_grid.npz', '')}_{args.field}_predictions.png"
-        plot_predictions(plot_data, args.field, truth, mask, predictions, out_path)
+        plot_predictions(plot_data, args.field, truth, predictions, out_path)
         print(f"[ok] wrote {out_path}")
 
 
@@ -141,7 +141,9 @@ def load_truth(path: Path, field: str) -> tuple[np.ndarray, np.ndarray, dict]:
     mask = data["fluid_mask"].astype(bool)
     values = data[field].astype(np.float32)
     truth = np.where(mask, values, np.nan)
-    return truth, mask, {key: data[key] for key in ["grid_x", "grid_y", "airfoil_x", "airfoil_y"]}
+    plot_data = {key: data[key] for key in ["grid_x", "grid_y", "airfoil_x", "airfoil_y"]}
+    plot_data["naca"] = str(data["naca"].item()) if "naca" in data else "unknown"
+    return truth, mask, plot_data
 
 
 def predict_case(torch, bundle: dict, path: Path, field: str, batch_size: int, device) -> np.ndarray:
@@ -173,8 +175,8 @@ def predict_case(torch, bundle: dict, path: Path, field: str, batch_size: int, d
     return np.where(mask, pred[field_idx], np.nan)
 
 
-def plot_predictions(plot_data: dict, field: str, truth: np.ndarray, mask: np.ndarray, predictions: dict[str, np.ndarray], out_path: Path) -> None:
-    names = ["truth", *predictions.keys()]
+def plot_predictions(plot_data: dict, field: str, truth: np.ndarray, predictions: dict[str, np.ndarray], out_path: Path) -> None:
+    names = ["OpenFOAM", *predictions.keys()]
     values = [truth, *predictions.values()]
     finite = [arr[np.isfinite(arr)] for arr in values if np.isfinite(arr).any()]
     finite_values = np.concatenate(finite) if finite else np.array([0.0, 1.0])
@@ -183,33 +185,39 @@ def plot_predictions(plot_data: dict, field: str, truth: np.ndarray, mask: np.nd
         vmin, vmax = float(vmin) - 1.0, float(vmax) + 1.0
 
     ncols = len(names)
-    fig, axes = plt.subplots(2, ncols, figsize=(4.0 * ncols, 6.2), constrained_layout=True)
+    fig, axes = plt.subplots(1, ncols, figsize=(4.0 * ncols, 3.4), constrained_layout=True)
     if ncols == 1:
-        axes = np.array([[axes[0]], [axes[1]]])
+        axes = np.array([axes])
 
     for col, (name, arr) in enumerate(zip(names, values)):
-        draw_field(axes[0, col], plot_data, arr, f"{name} {field}", "viridis", vmin, vmax)
-        if name == "truth":
-            axes[1, col].axis("off")
-            axes[1, col].set_title("absolute error")
-        else:
-            err = np.where(mask, np.abs(arr - truth), np.nan)
-            err_max = np.nanpercentile(err, 99) if np.isfinite(err).any() else 1.0
-            draw_field(axes[1, col], plot_data, err, f"{name} abs error", "magma", 0.0, err_max)
+        model_label = {
+            "unet": "CNN-U-Net",
+            "pinn": "Physics-reg. MLP",
+            "fno": "FNO",
+            "deeponet": "DeepONet",
+        }.get(name, name)
+        field_label = "pressure $p$" if field == "p" else field
+        title = f"{model_label} {field_label}\nNACA {plot_data['naca']}"
+        mesh = draw_field(axes[col], plot_data, arr, title, "viridis", vmin, vmax)
+
+    colorbar = fig.colorbar(mesh, ax=axes.tolist(), shrink=0.78, pad=0.012)
+    colorbar.set_label("Absolute pressure (Pa)")
 
     fig.savefig(out_path, dpi=180)
     plt.close(fig)
 
 
-def draw_field(ax, plot_data: dict, values: np.ndarray, title: str, cmap: str, vmin: float, vmax: float) -> None:
+def draw_field(ax, plot_data: dict, values: np.ndarray, title: str, cmap: str, vmin: float, vmax: float):
     mesh = ax.pcolormesh(plot_data["grid_x"], plot_data["grid_y"], values, shading="auto", cmap=cmap, vmin=vmin, vmax=vmax)
     ax.plot(plot_data["airfoil_x"], plot_data["airfoil_y"], color="white", linewidth=0.8)
     ax.fill(plot_data["airfoil_x"], plot_data["airfoil_y"], color="black", alpha=0.55)
     ax.set_aspect("equal", adjustable="box")
+    ax.set_xlim(-0.25, 1.25)
+    ax.set_ylim(-0.375, 0.375)
     ax.set_xlabel("x / c")
     ax.set_ylabel("y / c")
     ax.set_title(title)
-    plt.colorbar(mesh, ax=ax, shrink=0.8)
+    return mesh
 
 
 if __name__ == "__main__":

@@ -366,16 +366,16 @@ when velocity, pressure, or $C_p$ is accurate.}
 
 Figure~\ref{fig:pressure} shows a representative validation case from the unseen NACA 0015 family. The
 pointwise models reproduce the leading-edge pressure structure most closely;
-CNN-U-Net smooths the extrema and FNO introduces spatial texture. The distinct
-error color scales in the lower row are retained to expose each model's error
-structure rather than visually equalizing models with very different ranges.
+CNN-U-Net smooths the extrema and FNO introduces spatial texture. A common
+color scale makes the location and magnitude of those differences directly
+comparable across all five panels.
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.97\textwidth]{figures/heldout_pressure.png}
-\caption{Absolute-pressure prediction for a representative validation case from the NACA 0015
-case (case 160), followed by per-model absolute error. All prediction panels
-share the truth color scale; error panels use individually labeled scales.}
+\caption{Absolute-pressure prediction for a representative NACA 0015
+validation case (case 160), shown over $x/c\in[-0.25,1.25]$ and
+$y/c\in[-0.375,0.375]$. Every panel uses the same color scale.}
 \label{fig:pressure}
 \end{figure*}
 
@@ -453,7 +453,7 @@ independent OpenFOAM results; $\Delta$ is their absolute difference.}
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{lrrrrrr}
 \toprule
-Model & Start & Base & Pred. & Final & $\Delta$ & Gain \\
+Model & Start & Initial & Pred. & Final & $\Delta$ & Gain \\
 \midrule
 CNN-U-Net & 2412 & 25.89 & 30.17 & 38.45 & +12.55 & 48.5\% \\
 Physics-reg. MLP & 4415 & 25.57 & 43.62 & \textbf{45.96} & \textbf{+20.39} & \textbf{79.7\%} \\
@@ -470,9 +470,9 @@ Direct CFD & 4415 & 25.57 & -- & 29.89 & +4.32 & 16.9\% \\
 \caption{Top: selected shapes against the same dashed NACA 2412 geometric
 reference. The common reference supports shape comparison and is not
 necessarily the optimizer initializer; actual initializers are listed in
-Table~\ref{tab:allstarts}. Bottom left: surrogate predictions, CFD endpoint
-checks, and the direct-CFD result. Bottom right: best-so-far objective during
-each direct OpenFOAM search.}
+Table~\ref{tab:allstarts}. Bottom: initial-foil OpenFOAM values, surrogate
+predictions at the selected designs, fresh OpenFOAM endpoint checks, and the
+direct-CFD result.}
 \label{fig:optimization}
 \end{figure*}
 
