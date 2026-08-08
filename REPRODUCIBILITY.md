@@ -32,6 +32,19 @@ The pinned versions reproduce the environment used for the paper. If a wheel is
 not available on another platform, use `requirements-ml.txt` and record the
 resolved versions in the experiment log.
 
+## Archived Data and Checkpoints
+
+The corrected CFD dataset and trained checkpoints are archived at
+[Zenodo DOI 10.5281/zenodo.21845241](https://doi.org/10.5281/zenodo.21845241).
+
+```text
+5bb21a67d2f9fc52ae7556012eae31cc772f9394b0fd0669b7379c96feba71dc  hydrofoil_cfd_dataset_v1.tar.gz
+443f162ba38a4d993145fd5c2714823e6c24496129bab237ea31a08f44ac08c8  hydrofoil_model_checkpoints_v1.tar.gz
+```
+
+After downloading, verify the files with `shasum -a 256 -c SHA256SUMS.txt`
+and extract both archives at the repository root.
+
 ## End-to-End Workflow
 
 The stage runner contains every command and exact training hyperparameter:
@@ -63,10 +76,9 @@ without rerunning all OpenFOAM cases.
 - `hso_results/corrected/optimized/openfoam_validation.csv`: CFD reruns
 - `papers/*/main.pdf`: compiled manuscripts
 
-The compact CSV, JSON, and figure outputs should be versioned in GitHub. The CFD
-dataset and checkpoint bundle should be deposited in an archival service such as
-Zenodo and linked from the GitHub release. Add SHA-256 checksums and replace the
-repository URL and release version to `CITATION.cff` before the public release.
+The compact CSV, JSON, and figure outputs are versioned in GitHub. The full CFD
+dataset and checkpoint bundle are deposited on Zenodo so every reported table
+can be reproduced without storing large binaries in the source repository.
 
 ## Claim Boundary
 

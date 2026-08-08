@@ -8,6 +8,8 @@ The code is released under the [MIT License](LICENSE). See
 [REPRODUCIBILITY.md](REPRODUCIBILITY.md) for the exact paper workflow,
 environment, output locations, and claim boundaries.
 
+Dataset and trained checkpoints: [Zenodo DOI 10.5281/zenodo.21845241](https://doi.org/10.5281/zenodo.21845241).
+
 The local workflow supports two modes:
 
 - `analytic_smoke`: deterministic synthetic fields used to verify the full data
