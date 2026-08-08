@@ -1,0 +1,33 @@
+rho: 997.0
+nu: 1.0e-6
+p_inf: 101325.0
+p_vap: 2300.0
+chord: 1.0
+grid:
+  nx: 128
+  ny: 64
+  x_min: -1.0
+  x_max: 2.0
+  y_min: -0.75
+  y_max: 0.75
+cases:
+  - id: case_001
+    naca: "0006"
+    AoA: -2.0
+    Re: 100000.0
+  - id: case_002
+    naca: "0008"
+    AoA: 0.0
+    Re: 100000.0
+  - id: case_003
+    naca: "0012"
+    AoA: 4.0
+    Re: 200000.0
+  - id: case_004
+    naca: "2412"
+    AoA: 6.0
+    Re: 500000.0
+  - id: case_005
+    naca: "4415"
+    AoA: 8.0
+    Re: 1000000.0

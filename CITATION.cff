@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this benchmark, please cite the accompanying paper and this software release."
+title: "Hydrofoil Neural Surrogate Benchmark"
+type: software
+authors:
+  - family-names: Dixit
+    given-names: Aarav
+year: 2026
+license: MIT
+abstract: "Code and reproducibility workflow for benchmarking CNN-U-Net, physics-regularized MLP, FNO, and DeepONet surrogates for hydrofoil RANS flow, cavitation-risk screening, and shape optimization."

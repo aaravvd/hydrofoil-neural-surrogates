@@ -1,0 +1,10 @@
+{
+  "grid_case_count": 384,
+  "naca_re_groups": 48,
+  "cross_AoA_comparisons": 336,
+  "exact_pressure_duplicates_across_AoA": 0,
+  "positive_cavitation_cells": 316,
+  "openfoam_force_coefficient_files": 384,
+  "valid_for_AoA_or_shape_optimization": true,
+  "finding": "No duplicate-AoA pressure fields detected and force references are available."
+}

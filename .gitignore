@@ -1,0 +1,40 @@
+.DS_Store
+.matplotlib-cache/
+__pycache__/
+*.pyc
+.venv/
+training_runs/
+.cache/
+tmp/
+
+# Regenerable CFD and intermediate datasets. Publish archival snapshots
+# separately (for example, Zenodo) and record their checksums.
+corrected_production/
+corrected_full/
+corrected_pilot/
+corrected_symmetry/
+corrected_symmetry_refined/
+corrected_symmetry_split/
+data/raw_cases/
+data/processed_grids/
+data/openfoam_cases/
+/openfoam_cases/
+/figures/
+
+# Generated optimization solver cases can be reconstructed from summaries.
+hso_results/**/openfoam_cases/
+hso_results/**/openfoam_validation/
+
+# LaTeX build products; source and final PDFs remain trackable.
+papers/**/*.aux
+papers/**/*.bbl
+papers/**/*.blg
+papers/**/*.log
+papers/**/*.out
+papers/**/*.synctex.gz
+papers/**/main.pdf
+output/pdf/*_draft.pdf
+
+# OpenFOAM runtime logs and processor decompositions can get large quickly.
+openfoam_cases/**/log.*
+openfoam_cases/**/processor*/

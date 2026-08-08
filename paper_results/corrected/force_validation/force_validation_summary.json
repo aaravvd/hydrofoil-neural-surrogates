@@ -1,0 +1,16 @@
+{
+  "n_cases": 384,
+  "comparison_note": "Grid integral is pressure-only; OpenFOAM reference includes pressure and viscous forces.",
+  "Cl": {
+    "mae": 2322.0023231868804,
+    "rmse": 45431.932827276425,
+    "mean_relative_absolute_error": 0.7324850323748792,
+    "pearson_r": 0.9808193312471335
+  },
+  "Cd": {
+    "mae": 518.7566365823242,
+    "rmse": 9809.255756826144,
+    "mean_relative_absolute_error": 0.5530584491126443,
+    "pearson_r": 0.9987998631464101
+  }
+}
