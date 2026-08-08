@@ -18,12 +18,21 @@ corrected_symmetry_split/
 data/raw_cases/
 data/processed_grids/
 data/openfoam_cases/
+/data/metadata.csv
+/data/normalization.npy
 /openfoam_cases/
 /figures/
 
 # Generated optimization solver cases can be reconstructed from summaries.
 hso_results/**/openfoam_cases/
 hso_results/**/openfoam_validation/
+/hso_results/fno_screen/
+
+# Publish only the corrected paper results, not legacy pilot evaluations.
+/paper_results/*
+!/paper_results/corrected/
+!/paper_results/corrected/**
+!/paper_results/corrected_results_report.md
 
 # LaTeX build products; source and final PDFs remain trackable.
 papers/**/*.aux
