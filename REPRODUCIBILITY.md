@@ -74,6 +74,7 @@ without rerunning all OpenFOAM cases.
 - `paper_results/corrected/`: field, force, cavitation, runtime, and loss tables
 - `hso_results/corrected/optimized/`: optimizer traces and selected designs
 - `hso_results/corrected/optimized/openfoam_validation.csv`: CFD reruns
+- `hso_results/corrected/openfoam_baseline/`: matched direct-CFD optimization traces and winners
 - `papers/*/main.pdf`: compiled manuscripts
 
 The compact CSV, JSON, and figure outputs are versioned in GitHub. The full CFD

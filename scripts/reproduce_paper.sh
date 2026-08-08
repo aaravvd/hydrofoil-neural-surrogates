@@ -11,6 +11,7 @@ FOAM_DIR="$ROOT/corrected_production/openfoam_cases"
 RUN_DIR="$ROOT/training_runs/corrected"
 RESULT_DIR="$ROOT/paper_results/corrected"
 OPT_DIR="$ROOT/hso_results/corrected/optimized"
+CFD_OPT_DIR="$ROOT/hso_results/corrected/openfoam_baseline"
 TARGETS="Ux,Uy,p,nut,k,omega,Cp,cavitation_margin,Cl,Cd"
 
 if [[ ! -x "$PYTHON" ]]; then
@@ -89,6 +90,9 @@ run_optimize() {
     --optimization-summary "$OPT_DIR/optimization_summary.csv" \
     --artifact-root "$ROOT/hso_results/corrected/openfoam_validation" \
     --output "$OPT_DIR/openfoam_validation.csv" --jobs "${JOBS:-4}" --Re 500000
+  "$PYTHON" scripts/optimize_openfoam_baseline.py \
+    --output-dir "$CFD_OPT_DIR" --starts 0012,2412,4415 \
+    --Re 500000 --maxiter 40
 }
 
 run_papers() {
@@ -98,6 +102,16 @@ run_papers() {
       TECTONIC_CACHE_DIR="$ROOT/.cache/tectonic" tectonic main.tex \
         --keep-logs --keep-intermediates)
   done
+  mkdir -p "$ROOT/output/pdf"
+  cp "$ROOT/papers/ai4s26/main.pdf" \
+    "$ROOT/output/pdf/ai4s26_hydrofoil_surrogate_optimization_draft.pdf"
+  cp "$ROOT/papers/sim2science26/main.pdf" \
+    "$ROOT/output/pdf/sim2science26_imperfect_cfd_hydrofoil_draft.pdf"
+  mkdir -p "$ROOT/output/pdf/ai4s26" "$ROOT/output/pdf/sim2science26"
+  cp "$ROOT/papers/ai4s26/main.pdf" \
+    "$ROOT/output/pdf/ai4s26/hydrofoil_surrogate_benchmark_ai4s26.pdf"
+  cp "$ROOT/papers/sim2science26/main.pdf" \
+    "$ROOT/output/pdf/sim2science26/hydrofoil_surrogate_benchmark_sim2science26.pdf"
 }
 
 case "$STAGE" in

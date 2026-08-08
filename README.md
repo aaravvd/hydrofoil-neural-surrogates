@@ -155,15 +155,20 @@ foils and randomly generated smooth airfoils:
 .venv/bin/python scripts/optimize_hydrofoil_shapes.py \
   --run-dir training_runs/corrected --models unet,pinn,fno,deeponet \
   --output-dir hso_results/corrected/optimized
+
+.venv/bin/python scripts/optimize_openfoam_baseline.py \
+  --output-dir hso_results/corrected/openfoam_baseline \
+  --starts 0012,2412,4415 --Re 500000 --maxiter 40
 ```
 
 This writes ranked design candidates, candidate geometry CSVs, and a screening
-report under `hso_results/`. Corrected checkpoints rank with direct learned
-OpenFOAM `Cl`/`Cd`; older checkpoints fall back to pressure integration. Re-run
-every model's winning candidate in OpenFOAM before making final performance
-claims. Random shapes and the oval test geometries outside the training family.
-They do not establish validated free-form optimization beyond the NACA
-parameterization.
+report under `hso_results/`. Corrected checkpoints rank with learned OpenFOAM
+`Cl`/`Cd` targets. Each surrogate winner is remeshed and rerun once in OpenFOAM
+to verify its endpoint, while `optimize_openfoam_baseline.py` performs the
+matched direct-CFD search from the same starts, with the same bounds, objective,
+optimizer, and iteration budget. Random shapes and the oval are screening tests
+outside the training family; the validated optimization comparison uses the
+NACA four-digit parameterization.
 
 Important cavitation caveat: this repository currently derives cavitation from
 absolute pressure and vapor pressure. Evaluate pressure-threshold inception risk
@@ -173,18 +178,21 @@ replacement for multiphase cavitating RANS labels such as vapor volume fraction,
 cavity length, or shedding dynamics. To train those, add solver outputs such as
 `alpha.vapor` to the OpenFOAM extraction and include that field in `--targets`.
 
-## Archival Release Checklist
+## Paper and Code Release
 
 This repository includes code, configurations, paper sources, compact CSV/JSON
 results, and final figures. Regenerable CFD artifacts are excluded by
 `.gitignore` because the corrected dataset is about 2.4 GB.
 
-Before creating the paper's tagged archival release:
+The dataset and checkpoints are archived at Zenodo DOI
+`10.5281/zenodo.21845241`, and their SHA-256 checksums are recorded in
+`REPRODUCIBILITY.md`. For an AI4S submission:
 
-1. Deposit the CFD dataset and checkpoints in Zenodo or a similar archive.
-2. Add the archive DOI and SHA-256 checksums to `REPRODUCIBILITY.md`.
-3. Add the release version to `CITATION.cff`.
-4. Create a tagged GitHub release that matches the paper submission.
+1. Keep this repository public; AI4S uses single-blind rather than anonymous review.
+2. Commit the exact paper source, scripts, compact results, and figures used in the PDF.
+3. Create a versioned tag and GitHub release, such as `ai4s26-submission-v1`.
+4. Upload the AI4S PDF through the SC submission system and enter the GitHub URL and Zenodo DOI where artifact links are requested.
+5. If the paper changes after review, create a camera-ready tag instead of moving the submission tag.
 
 This layout keeps the code easy to clone while preserving an immutable copy of
 the exact data and checkpoints used for the reported tables.

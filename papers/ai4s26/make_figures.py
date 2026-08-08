@@ -7,17 +7,21 @@ import csv
 import json
 import os
 import shutil
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = Path(__file__).resolve().parent / "figures"
 os.environ.setdefault("MPLCONFIGDIR", str(ROOT / ".matplotlib-cache"))
+sys.path.insert(0, str(ROOT))
 
 import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+
+from hydrofoil_pipeline.naca import coordinates, coordinates_from_parameters
 
 
 MODELS = ["unet", "pinn", "fno", "deeponet"]
@@ -61,6 +65,30 @@ def tradeoff_figure() -> None:
     plt.close(fig)
 
 
+def field_r2_figure() -> None:
+    rows = read_csv(ROOT / "paper_results/corrected/field_metrics.csv")
+    fields = ["Ux", "Uy", "p", "Cp", "nut", "k", "omega"]
+    field_labels = [r"$U_x$", r"$U_y$", r"$p$", r"$C_p$", r"$\nu_t$", r"$k$", r"$\omega$"]
+    values = np.array([[metric(rows, model, field, "r2") for field in fields] for model in MODELS])
+
+    fig, ax = plt.subplots(figsize=(7.2, 2.25), constrained_layout=True)
+    image = ax.imshow(values, cmap="RdYlBu", vmin=-0.05, vmax=1.0, aspect="auto")
+    ax.set_xticks(range(len(fields)), field_labels)
+    ax.set_yticks(range(len(MODELS)), [LABELS[model] for model in MODELS])
+    ax.tick_params(labelsize=8)
+    for row in range(values.shape[0]):
+        for column in range(values.shape[1]):
+            color = "white" if values[row, column] < 0.18 or values[row, column] > 0.82 else "black"
+            ax.text(column, row, f"{values[row, column]:.2f}", ha="center", va="center",
+                    fontsize=7.5, color=color)
+    colorbar = fig.colorbar(image, ax=ax, fraction=0.035, pad=0.025)
+    colorbar.set_label(r"Validation $R^2$", fontsize=8)
+    colorbar.ax.tick_params(labelsize=7)
+    fig.savefig(OUT / "field_r2_heatmap.pdf", bbox_inches="tight")
+    fig.savefig(OUT / "field_r2_heatmap.png", dpi=240, bbox_inches="tight")
+    plt.close(fig)
+
+
 def optimization_figure() -> None:
     rows = read_csv(ROOT / "hso_results/corrected/optimized/openfoam_validation.csv")
     by_model = {r["model"]: r for r in rows}
@@ -90,6 +118,93 @@ def optimization_figure() -> None:
     plt.close(fig)
 
 
+def aso_results_figure() -> None:
+    rows = read_csv(ROOT / "hso_results/corrected/optimized/openfoam_validation.csv")
+    by_model = {row["model"]: row for row in rows}
+    cfd_summaries = read_csv(
+        ROOT / "hso_results/corrected/openfoam_baseline/optimization_summary.csv"
+    )
+    cfd_best = max(cfd_summaries, key=lambda row: float(row["best_objective"]))
+    cfd_trace = read_csv(
+        ROOT / "hso_results/corrected/openfoam_baseline/optimization_trace.csv"
+    )
+    baselines = {"unet": 25.8913357988, "pinn": 25.5700378416,
+                 "fno": 25.5700378416, "deeponet": 25.8913357988}
+
+    design_rows = [(LABELS[model], by_model[model], COLORS[model]) for model in MODELS]
+    design_rows.append(("Direct OpenFOAM", cfd_best, "#222222"))
+
+    fig = plt.figure(figsize=(8.2, 4.7), constrained_layout=True)
+    grid = fig.add_gridspec(2, 10, height_ratios=[0.9, 1.55])
+    for index, (label, row, color) in enumerate(design_rows):
+        ax = fig.add_subplot(grid[0, 2 * index:2 * index + 2])
+        start = row["start"]
+        start_x, start_y = coordinates(start)
+        if label == "Direct OpenFOAM":
+            m, p, thickness = (
+                float(row["best_m"]), float(row["best_p"]), float(row["best_t"])
+            )
+        else:
+            m, p, thickness = float(row["m"]), float(row["p"]), float(row["t"])
+        opt_x, opt_y = coordinates_from_parameters(m, p, thickness)
+        ax.plot(start_x, start_y, color="#777777", linestyle="--", linewidth=1.2,
+                label=f"NACA {start}")
+        ax.plot(opt_x, opt_y, color=color, linewidth=1.8, label="optimized")
+        ax.fill(opt_x, opt_y, color=color, alpha=0.10)
+        ax.set_title(f"{label}\nNACA {start} start", fontsize=7.5, pad=2)
+        ax.set_xlim(-0.03, 1.03)
+        ax.set_ylim(-0.12, 0.14)
+        ax.set_aspect("equal", adjustable="box")
+        ax.set_xticks([0, 0.5, 1.0])
+        ax.set_yticks([-0.1, 0, 0.1] if index == 0 else [])
+        ax.tick_params(labelsize=7)
+        ax.grid(alpha=0.18, linewidth=0.5)
+
+    ax = fig.add_subplot(grid[1, :6])
+    x = np.arange(5)
+    width = 0.27
+    direct_start = next(
+        float(row["L_over_D"])
+        for row in cfd_trace
+        if row["start"] == cfd_best["start"] and int(row["evaluation"]) == 1
+    )
+    baseline_values = [baselines[model] for model in MODELS] + [direct_start]
+    predicted = [float(by_model[model]["predicted_L_over_D"]) for model in MODELS]
+    validated = [float(by_model[model]["openfoam_L_over_D"]) for model in MODELS] + [
+        float(cfd_best["best_L_over_D"])
+    ]
+    ax.bar(x - width, baseline_values, width, label="OpenFOAM start", color="#A7A7A7")
+    ax.bar(x[:4], predicted, width, label="Surrogate prediction", color="#5B8DB8")
+    bars = ax.bar(x + width, validated, width, label="OpenFOAM result", color="#E1812C")
+    ax.set_ylabel("Lift-to-drag ratio")
+    bar_labels = ["CNN-\nU-Net", "Physics-reg.\nMLP", "FNO", "DeepONet", "Direct\nCFD"]
+    ax.set_xticks(x, bar_labels, fontsize=7)
+    ax.set_ylim(0, max(58, 1.18 * max(baseline_values + predicted + validated)))
+    ax.grid(axis="y", alpha=0.25, linewidth=0.6)
+    ax.legend(frameon=False, fontsize=7, ncol=3, loc="upper center",
+              bbox_to_anchor=(0.5, 1.15))
+    for bar, value in zip(bars, validated):
+        ax.text(bar.get_x() + bar.get_width() / 2, value + 1.0,
+                f"{value:.2f}", ha="center", va="bottom", fontsize=6.5)
+
+    ax = fig.add_subplot(grid[1, 6:])
+    for start, color in zip(["0012", "2412", "4415"], ["#2878B5", "#D95F02", "#4E9F3D"]):
+        values = [
+            float(row["objective"]) for row in cfd_trace
+            if row["start"] == start and row["status"] == "ok"
+        ]
+        if values:
+            ax.step(np.arange(1, len(values) + 1), np.maximum.accumulate(values),
+                    where="post", linewidth=1.5, label=f"NACA {start}", color=color)
+    ax.set_xlabel("OpenFOAM evaluations")
+    ax.set_ylabel("Best objective")
+    ax.grid(alpha=0.25, linewidth=0.6)
+    ax.legend(frameon=False, fontsize=7)
+    fig.savefig(OUT / "aso_results.pdf", bbox_inches="tight")
+    fig.savefig(OUT / "aso_results.png", dpi=240, bbox_inches="tight")
+    plt.close(fig)
+
+
 def copy_existing() -> None:
     sources = {
         ROOT / "paper_results/corrected/training_loss_curves.png": OUT / "training_loss_curves.png",
@@ -104,7 +219,9 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     plt.rcParams.update({"font.size": 9, "axes.spines.top": False, "axes.spines.right": False})
     tradeoff_figure()
+    field_r2_figure()
     optimization_figure()
+    aso_results_figure()
     copy_existing()
     print(f"Wrote paper figures to {OUT}")
 

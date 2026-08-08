@@ -1,0 +1,50 @@
+[
+  {
+    "start": "0012",
+    "success": false,
+    "message": "Best observed within the fixed iteration budget.",
+    "evaluations": 90,
+    "best_m": "0.0001533697632014473",
+    "best_p": "0.39083304170126976",
+    "best_t": "0.11412625244067537",
+    "best_AoA": "4.421142379022616",
+    "best_Cl": "0.4069855",
+    "best_Cd": "0.02286689",
+    "best_L_over_D": "17.7972475816527",
+    "best_min_cavitation_margin": "98863.162972",
+    "best_objective": "17.7972475816527",
+    "best_case_id": "start_0012_eval_090_10e3001cfdac"
+  },
+  {
+    "start": "2412",
+    "success": false,
+    "message": "Best observed within the fixed iteration budget.",
+    "evaluations": 80,
+    "best_m": "0.020387293755012206",
+    "best_p": "0.4035355685186597",
+    "best_t": "0.11676445910395467",
+    "best_AoA": "4.058494485642228",
+    "best_Cl": "0.6100376",
+    "best_Cd": "0.02232073",
+    "best_L_over_D": "27.3293154249245",
+    "best_min_cavitation_margin": "98886.692172",
+    "best_objective": "27.3293154249245",
+    "best_case_id": "start_2412_eval_080_4cc0909b67d4"
+  },
+  {
+    "start": "4415",
+    "success": false,
+    "message": "Best observed within the fixed iteration budget.",
+    "evaluations": 96,
+    "best_m": "0.04068124451472427",
+    "best_p": "0.4166380500804516",
+    "best_t": "0.1442588899334766",
+    "best_AoA": "3.975381964357642",
+    "best_Cl": "0.8292102",
+    "best_Cd": "0.0277439",
+    "best_L_over_D": "29.886941383821892",
+    "best_min_cavitation_margin": "98877.471916",
+    "best_objective": "29.886941383821892",
+    "best_case_id": "start_4415_eval_088_34c0541b6934"
+  }
+]

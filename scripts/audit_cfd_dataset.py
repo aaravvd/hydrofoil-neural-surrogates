@@ -4,12 +4,61 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import re
 from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def solver_convergence(foam_dir: Path) -> dict:
+    final_residuals = []
+    cl_spans = []
+    cd_spans = []
+    retained_cases = set()
+    reached_end = 0
+    for force_path in sorted(foam_dir.glob("case_*/postProcessing/forceCoeffs/*/forceCoeffs.dat")):
+        values = np.loadtxt(force_path, comments="#", ndmin=2)
+        if values.shape[1] < 4 or abs(values[-1, 2]) > 5 or abs(values[-1, 3]) > 5:
+            continue
+        retained_cases.add(force_path.parents[3].name)
+        tail = values[values[:, 0] >= values[-1, 0] - 50]
+        if tail.shape[0] >= 2:
+            cd_spans.append(float(np.ptp(tail[:, 2])))
+            cl_spans.append(float(np.ptp(tail[:, 3])))
+
+    logs = sorted(foam_dir.glob("case_*/log.simpleFoam"))
+    for log_path in logs:
+        if log_path.parent.name not in retained_cases:
+            continue
+        text = log_path.read_text(errors="replace")
+        marker = text.rfind("Time = 300")
+        if marker >= 0:
+            reached_end += 1
+            block = text[marker:text.find("ExecutionTime", marker)]
+            residuals = [
+                float(value)
+                for value in re.findall(r"Initial residual = ([0-9.eE+\-]+)", block)
+            ]
+            if residuals:
+                final_residuals.append(max(residuals))
+
+    def distribution(values: list[float]) -> dict:
+        return {
+            "median": float(np.median(values)) if values else None,
+            "p95": float(np.percentile(values, 95)) if values else None,
+            "maximum": float(np.max(values)) if values else None,
+        }
+
+    return {
+        "retained_case_count": len(retained_cases),
+        "cases_reaching_iteration_300": reached_end,
+        "max_initial_residual_at_iteration_300": distribution(final_residuals),
+        "Cl_span_over_final_50_iterations": distribution(cl_spans),
+        "Cd_span_over_final_50_iterations": distribution(cd_spans),
+    }
 
 
 def main() -> None:
@@ -62,6 +111,7 @@ def main() -> None:
         "exact_pressure_duplicates_across_AoA": exact_duplicates,
         "positive_cavitation_cells": positive_cavitation,
         "openfoam_force_coefficient_files": len(force_files),
+        "solver_convergence": solver_convergence(args.foam_dir),
         "valid_for_AoA_or_shape_optimization": exact_duplicates == 0 and bool(force_files),
         "finding": (
             "AoA-labelled grids contain exact duplicates and no OpenFOAM forceCoeffs references. "

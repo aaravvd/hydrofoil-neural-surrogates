@@ -4,8 +4,8 @@ This file is an author-side audit aid and is not part of the submission.
 
 | Manuscript claim | Evidence artifact | Qualification |
 |---|---|---|
-| 381 usable cases and 64 held-out cases | `training_runs/corrected/*/metrics.json` | Three cases with nonphysical force coefficients above 5 were excluded. |
-| NACA 0015 and 2412 were fully held out | Deterministic `split_paths_by_naca(..., 0.15, 7)` | This tests unseen NACA families, not arbitrary geometry generalization. |
+| 381 usable cases and 64 validation cases | `training_runs/corrected/*/metrics.json` | Three cases with nonphysical force coefficients above 5 were excluded. |
+| NACA 0015 and 2412 are the complete validation families | Deterministic `split_paths_by_naca(..., 0.15, 7)` | This tests unseen NACA families, not arbitrary geometry generalization. |
 | PINN-style model has pressure R2 0.966 | `paper_results/corrected/field_metrics.csv` | Call it a supervised physics-regularized point network, not a classical boundary-only PINN. |
 | DeepONet has best Cl/Cd R2 | `paper_results/corrected/field_metrics.csv` | Values are 0.9964 and 0.9883 on the held-out geometry split. |
 | Speedups are 917x--1801x | `paper_results/corrected/runtime_speedup.csv` | Inference timing predicts the pressure field; OpenFOAM time is parsed from solver logs on the same local system. |
@@ -15,8 +15,8 @@ This file is an author-side audit aid and is not part of the submission.
 
 ## Required Author Checks
 
-- Replace author and affiliation placeholders.
-- Confirm whether code and data can be anonymized and released.
+- Confirm the author affiliation in the final PDF.
+- Create an immutable GitHub tag for the submitted version.
 - State the exact CPU/GPU and OpenFOAM version used for runtime experiments.
 - Confirm travel and registration feasibility before final submission.
 - Run an external similarity and citation check before submission.

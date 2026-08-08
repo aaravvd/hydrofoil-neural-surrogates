@@ -197,7 +197,6 @@ def plot_predictions(plot_data: dict, field: str, truth: np.ndarray, mask: np.nd
             err_max = np.nanpercentile(err, 99) if np.isfinite(err).any() else 1.0
             draw_field(axes[1, col], plot_data, err, f"{name} abs error", "magma", 0.0, err_max)
 
-    fig.suptitle(out_path.name.replace("_", " "), fontsize=12)
     fig.savefig(out_path, dpi=180)
     plt.close(fig)
 
