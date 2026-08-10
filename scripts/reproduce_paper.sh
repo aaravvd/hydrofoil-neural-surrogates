@@ -8,9 +8,9 @@ PYTHON="${PYTHON:-$ROOT/.venv/bin/python}"
 STAGE="${1:-all}"
 DATA_DIR="$ROOT/corrected_production/data/processed_grids"
 FOAM_DIR="$ROOT/corrected_production/openfoam_cases"
-RUN_DIR="$ROOT/training_runs/corrected"
-RESULT_DIR="$ROOT/paper_results/corrected"
-OPT_DIR="$ROOT/hso_results/corrected/optimized"
+RUN_DIR="$ROOT/training_runs/revised"
+RESULT_DIR="$ROOT/paper_results/revised"
+OPT_DIR="$ROOT/hso_results/revised"
 CFD_OPT_DIR="$ROOT/hso_results/corrected/openfoam_baseline"
 TARGETS="Ux,Uy,p,nut,k,omega,Cp,cavitation_margin,Cl,Cd"
 
@@ -29,10 +29,8 @@ common_train_args=(
   --lr 0.002
   --weight-decay 0.0001
   --bce-weight 0.2
-  --val-fraction 0.15
-  --split-strategy naca
+  --split-manifest "$ROOT/configs/family_split.json"
   --max-abs-force-coefficient 5
-  --seed 7
 )
 
 run_data() {
@@ -51,48 +49,73 @@ run_data() {
 }
 
 run_train() {
-  "$PYTHON" -m models.train --model unet "${common_train_args[@]}" \
-    --width 16 --depth 3 --operator-batch-size 4
-  "$PYTHON" -m models.train --model pinn "${common_train_args[@]}" \
-    --width 64 --depth 3 --batch-size 8192 --max-points-per-case 1024 \
-    --physics-weight 0.0001
-  "$PYTHON" -m models.train --model fno "${common_train_args[@]}" \
-    --width 32 --depth 4 --modes 12 --operator-batch-size 4
-  "$PYTHON" -m models.train --model deeponet "${common_train_args[@]}" \
-    --width 64 --depth 3 --basis 64 --max-points-per-case 1024 \
-    --batch-size 8192
+  local seed seed_dir
+  for seed in ${SEEDS:-7 17 27}; do
+    seed_dir="$RUN_DIR/seed_$seed"
+    "$PYTHON" -m models.train --model unet "${common_train_args[@]}" --output-dir "$seed_dir" --seed "$seed" \
+      --width 16 --depth 3 --operator-batch-size 4
+    "$PYTHON" -m models.train --model pinn "${common_train_args[@]}" --output-dir "$seed_dir" --seed "$seed" \
+      --width 64 --depth 3 --batch-size 8192 --max-points-per-case 1024 \
+      --physics-weight 0.0001
+    "$PYTHON" -m models.train --model fno "${common_train_args[@]}" --output-dir "$seed_dir" --seed "$seed" \
+      --width 32 --depth 4 --modes 12 --operator-batch-size 4
+    "$PYTHON" -m models.train --model deeponet "${common_train_args[@]}" --output-dir "$seed_dir" --seed "$seed" \
+      --width 64 --depth 3 --basis 64 --max-points-per-case 1024 \
+      --batch-size 8192
+  done
 }
 
 run_evaluate() {
-  "$PYTHON" scripts/evaluate_model_results.py \
-    --run-dir "$RUN_DIR" --data-dir "$DATA_DIR" --output-dir "$RESULT_DIR" \
-    --models all --split validation --split-strategy naca --seed 7
-  "$PYTHON" scripts/evaluate_model_forces.py \
-    --run-dir "$RUN_DIR" --data-dir "$DATA_DIR" --foam-dir "$FOAM_DIR" \
-    --output-dir "$RESULT_DIR/model_forces" --split validation \
-    --split-strategy naca --seed 7
-  "$PYTHON" scripts/evaluate_cavitation_risk.py \
-    --run-dir "$RUN_DIR" --data-dir "$DATA_DIR" \
-    --output-dir "$RESULT_DIR/cavitation_risk" --split validation \
-    --split-strategy naca --seed 7
-  "$PYTHON" scripts/benchmark_runtime_speedup.py \
-    --run-dir "$RUN_DIR" --data-dir "$DATA_DIR" --openfoam-dir "$FOAM_DIR" \
-    --output "$RESULT_DIR/runtime_speedup.csv" --split validation --seed 7
-  "$PYTHON" scripts/plot_training_histories.py \
-    --run-dir "$RUN_DIR" --output "$RESULT_DIR/training_loss_curves.png"
+  local seed seed_run seed_result
+  for seed in ${SEEDS:-7 17 27}; do
+    seed_run="$RUN_DIR/seed_$seed"
+    seed_result="$RESULT_DIR/seed_$seed"
+    "$PYTHON" scripts/evaluate_model_results.py \
+      --run-dir "$seed_run" --data-dir "$DATA_DIR" --output-dir "$seed_result" \
+      --models all --split test --split-manifest "$ROOT/configs/family_split.json" --seed "$seed"
+    "$PYTHON" scripts/evaluate_model_forces.py \
+      --run-dir "$seed_run" --data-dir "$DATA_DIR" --foam-dir "$FOAM_DIR" \
+      --output-dir "$seed_result/model_forces" --split test \
+      --split-manifest "$ROOT/configs/family_split.json" --seed "$seed"
+    "$PYTHON" scripts/evaluate_cavitation_risk.py \
+      --run-dir "$seed_run" --data-dir "$DATA_DIR" \
+      --output-dir "$seed_result/cavitation_risk" --split test \
+      --split-manifest "$ROOT/configs/family_split.json" --seed "$seed"
+    "$PYTHON" scripts/benchmark_runtime_speedup.py \
+      --run-dir "$seed_run" --data-dir "$DATA_DIR" --openfoam-dir "$FOAM_DIR" \
+      --output "$seed_result/runtime_speedup.csv" --split test \
+      --split-manifest "$ROOT/configs/family_split.json" --seed "$seed"
+    "$PYTHON" scripts/plot_training_histories.py \
+      --run-dir "$seed_run" --output "$seed_result/training_loss_curves.png"
+  done
+  "$PYTHON" scripts/aggregate_multiseed_results.py --result-dir "$RESULT_DIR" --run-dir "$RUN_DIR"
+  "$PYTHON" scripts/visualize_model_predictions.py \
+    --run-dir "$RUN_DIR/seed_7" --data-dir "$DATA_DIR" --field p \
+    --case case_179 --num-cases 1 --output-dir "$ROOT/figures/revised_model_predictions_test"
 }
 
 run_optimize() {
-  "$PYTHON" scripts/optimize_hydrofoil_shapes.py \
-    --run-dir "$RUN_DIR" --models unet,pinn,fno,deeponet \
-    --output-dir "$OPT_DIR" --Re 500000 --maxiter 40
-  "$PYTHON" scripts/validate_optimized_designs.py \
-    --optimization-summary "$OPT_DIR/optimization_summary.csv" \
-    --artifact-root "$ROOT/hso_results/corrected/openfoam_validation" \
-    --output "$OPT_DIR/openfoam_validation.csv" --jobs "${JOBS:-4}" --Re 500000
-  "$PYTHON" scripts/optimize_openfoam_baseline.py \
-    --output-dir "$CFD_OPT_DIR" --starts 0012,2412,4415 \
-    --Re 500000 --maxiter 40
+  local seed seed_opt
+  for seed in ${SEEDS:-7 17 27}; do
+    seed_opt="$OPT_DIR/seed_$seed"
+    "$PYTHON" scripts/optimize_hydrofoil_shapes.py \
+      --run-dir "$RUN_DIR/seed_$seed" --models unet,pinn,fno,deeponet \
+      --output-dir "$seed_opt" --Re 500000 --maxiter 40 --cavitation-mode diagnostic
+    "$PYTHON" scripts/validate_optimized_designs.py \
+      --optimization-summary "$seed_opt/optimization_summary.csv" \
+      --artifact-root "$OPT_DIR/openfoam_validation/seed_$seed" \
+      --output "$seed_opt/openfoam_validation.csv" --jobs "${JOBS:-4}" --Re 500000
+  done
+  "$PYTHON" scripts/aggregate_hso_multiseed.py --input-dir "$OPT_DIR"
+  "$PYTHON" scripts/plot_optimization_traces.py --input-dir "$OPT_DIR" --output "$OPT_DIR/optimization_traces.png"
+  if [[ "${RUN_DIRECT_CFD_BASELINE:-0}" == "1" ]]; then
+    "$PYTHON" scripts/optimize_openfoam_baseline.py \
+      --output-dir "$CFD_OPT_DIR" --starts 0012,2412,4415 \
+      --Re 500000 --maxiter 40
+  fi
+  "$PYTHON" scripts/grid_convergence_selected_designs.py \
+    --optimization-summary "$OPT_DIR/seed_7/optimization_summary.csv" \
+    --output-dir "$OPT_DIR/grid_study" --jobs "${JOBS:-4}" --Re 500000
 }
 
 run_papers() {

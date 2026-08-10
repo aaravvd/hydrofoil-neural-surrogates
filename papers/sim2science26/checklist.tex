@@ -17,7 +17,7 @@
 \item {\bf Limitations}
     \item[] Question: Does the paper discuss the limitations of the work performed by the authors?
     \item[] Answer: \answerYes{}
-    \item[] Justification: Section 5 discusses simulator fidelity, the single training seed, geometry scope, direct force supervision, and limited CFD revalidation.
+    \item[] Justification: Section 5 discusses simulator fidelity, geometry scope, direct force supervision, continuous-shape extrapolation, and the boundary of the cavitation diagnostic.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper has no limitation while the answer \answerNo{} means that the paper has limitations, but those are not discussed in the paper. 
@@ -66,8 +66,8 @@
 
 \item {\bf Open access to data and code}
     \item[] Question: Does the paper provide open access to the data and code, with sufficient instructions to faithfully reproduce the main experimental results, as described in supplemental material?
-    \item[] Answer: \answerNo{}
-    \item[] Justification: The repository is organized for release, but an anonymized archival URL has not yet been inserted in this draft.
+    \item[] Answer: \answerYes{}
+    \item[] Justification: The anonymized supplementary archive provides code, three checkpoints per architecture, all final-test grids, compact results, licenses, and exact execution instructions; the full training data are supplied through the anonymous data link recorded in that archive.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that paper does not include experiments requiring code.
@@ -84,7 +84,7 @@
 \item {\bf Experimental setting/details}
     \item[] Question: Does the paper specify all the training and test details (e.g., data splits, hyperparameters, how they were chosen, type of optimizer) necessary to understand the results?
     \item[] Answer: \answerYes{}
-    \item[] Justification: Sections 2--3 give the deterministic split, seed, optimizer, learning rate, model sizes, stopping rule, and design bounds.
+    \item[] Justification: Sections 2--3 give the fixed train/validation/test families, three seeds, optimizer, learning rate, model sizes, stopping rule, and design bounds.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not include experiments.
@@ -94,8 +94,8 @@
 
 \item {\bf Experiment statistical significance}
     \item[] Question: Does the paper report error bars suitably and correctly defined or other appropriate information about the statistical significance of the experiments?
-    \item[] Answer: \answerNo{}
-    \item[] Justification: Models were trained with one fixed seed; the paper reports per-case held-out metrics and explicitly identifies repeated-seed analysis as future work.
+    \item[] Answer: \answerYes{}
+    \item[] Justification: Every architecture is trained with seeds 7, 17, and 27 on the same split; tables report the mean and one sample standard deviation over those independent training runs.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not include experiments.
@@ -161,8 +161,8 @@
 
 \item {\bf Licenses for existing assets}
     \item[] Question: Are the creators or original owners of assets (e.g., code, data, models), used in the paper, properly credited and are the license and terms of use explicitly mentioned and properly respected?
-    \item[] Answer: \answerNo{}
-    \item[] Justification: OpenFOAM and prior architectures are cited, but explicit software-license text remains to be added to the artifact documentation.
+    \item[] Answer: \answerYes{}
+    \item[] Justification: OpenFOAM and the prior architectures are cited; dependency versions are pinned, source code is MIT licensed, and the generated dataset and checkpoints are CC BY 4.0 licensed in the artifact.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not use existing assets.
@@ -177,8 +177,8 @@
 
 \item {\bf New assets}
     \item[] Question: Are new assets introduced in the paper well documented and is the documentation provided alongside the assets?
-    \item[] Answer: \answerNo{}
-    \item[] Justification: The generated dataset, checkpoints, and scripts are documented locally, but the anonymized release and final license are not yet attached to this draft.
+    \item[] Answer: \answerYes{}
+    \item[] Justification: The anonymous artifact documents generation, fixed family partition, training, evaluation, optimization, CFD checks, expected outputs, claim boundaries, and separate code/data licenses.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not release new assets.

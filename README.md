@@ -110,9 +110,10 @@ Run one stage at a time or reproduce the complete experiment:
 ```
 
 The stage runner uses the exact paper targets and checkpoint hyperparameters.
-It trains for at most 120 epochs with patience 20, seed 7, and a deterministic
-NACA-family split. The validation set contains all cases from NACA 0015 and
-NACA 2412; neither geometry appears in training.
+It trains for at most 120 epochs with patience 20 using seeds 7, 17, and 27.
+The fixed family manifest reserves NACA 0015 and 2412 for validation and NACA
+0018 and 4418 as a final test set that is never used for fitting, early
+stopping, or model selection.
 
 The physics-regularized model uses supervised CFD targets plus a lightweight
 steady incompressible continuity and momentum loss. It is not a data-free PINN
@@ -122,12 +123,12 @@ After training, plot pressure predictions on validation cases:
 
 ```bash
 .venv/bin/python scripts/evaluate_model_results.py \
-  --run-dir training_runs/corrected \
+  --run-dir training_runs/revised/seed_7 \
   --data-dir corrected_production/data/processed_grids \
-  --output-dir paper_results/corrected --split-strategy naca
+  --output-dir paper_results/revised/seed_7 --split test
 
 .venv/bin/python scripts/visualize_model_predictions.py \
-  --run-dir training_runs/corrected \
+  --run-dir training_runs/revised/seed_7 \
   --data-dir corrected_production/data/processed_grids --field p --num-cases 3
 ```
 
@@ -138,10 +139,10 @@ Benchmark surrogate inference against existing OpenFOAM logs:
 
 ```bash
 .venv/bin/python scripts/benchmark_runtime_speedup.py \
-  --run-dir training_runs/corrected \
+  --run-dir training_runs/revised/seed_7 \
   --data-dir corrected_production/data/processed_grids \
   --openfoam-dir corrected_production/openfoam_cases \
-  --output paper_results/corrected/runtime_speedup.csv
+  --output paper_results/revised/seed_7/runtime_speedup.csv --split test
 ```
 
 Run surrogate-assisted hydrodynamic shape optimization/screening over NACA
@@ -170,7 +171,8 @@ optimizer, and iteration budget. Random shapes and the oval are screening tests
 outside the training family; the validated optimization comparison uses the
 NACA four-digit parameterization.
 
-Important cavitation caveat: this repository currently derives cavitation from
+Important cavitation caveat: this repository treats cavitation as a secondary
+diagnostic and currently derives it from
 absolute pressure and vapor pressure. Evaluate pressure-threshold inception risk
 over ambient-pressure sweeps with `scripts/evaluate_cavitation_risk.py`. This is
 useful for inception risk (`cavitation_margin`, `Cp`), but it is not a
@@ -196,3 +198,19 @@ The dataset and checkpoints are archived at Zenodo DOI
 
 This layout keeps the code easy to clone while preserving an immutable copy of
 the exact data and checkpoints used for the reported tables.
+
+For double-blind review, do not link this identifying repository or the named
+Zenodo record. Build the sanitized supplementary archive after all three seeds
+finish:
+
+```bash
+.venv/bin/python scripts/build_anonymous_artifact.py
+```
+
+The command removes identifying text and checkpoint paths, includes the 64
+untouched test grids and all revised checkpoints/results, checks for known
+identity strings, and refuses to produce an archive of 100 MB or more. Upload
+`output/anonymous_artifact/hydrofoil_surrogate_review_artifact.zip` as the
+conference supplementary ZIP. The full CFD training data must be placed behind
+an anonymous review URL; replace `ANONYMOUS_DATA_URL` in the artifact README
+only after verifying that the destination metadata does not reveal the authors.

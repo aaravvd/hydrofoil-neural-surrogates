@@ -12,10 +12,13 @@ sys.path.insert(0, str(ROOT))
 
 import numpy as np
 
-from models.datasets import HydrofoilGridStore, field_names, filter_force_outliers, load_grid_paths, split_paths, split_paths_by_naca
+from models.datasets import HydrofoilGridStore, field_names, filter_force_outliers, load_grid_paths, split_paths, split_paths_by_manifest, split_paths_by_naca
 
 
 def make_split(paths, args):
+    if args.split_manifest:
+        train, validation, _ = split_paths_by_manifest(paths, args.split_manifest)
+        return train, validation
     if args.split_strategy == "naca":
         return split_paths_by_naca(paths, args.val_fraction, args.seed)
     return split_paths(paths, args.val_fraction, args.seed)
@@ -253,6 +256,7 @@ def write_metrics(output_dir: Path, model_name: str, history: list[dict], best: 
         "parameter_count": sum(parameter.numel() for parameter in model.parameters()),
         "training_seconds": elapsed,
         "split_strategy": args.split_strategy,
+        "split_manifest": str(args.split_manifest) if args.split_manifest else None,
         "seed": args.seed,
         "history": history,
     }
@@ -269,6 +273,7 @@ def main() -> None:
     parser.add_argument("--max-abs-force-coefficient", type=float, default=5.0)
     parser.add_argument("--val-fraction", type=float, default=0.15)
     parser.add_argument("--split-strategy", choices=["random", "naca"], default="naca")
+    parser.add_argument("--split-manifest", type=Path, default=ROOT / "configs" / "family_split.json")
     parser.add_argument("--max-points-per-case", type=int, default=4096)
     parser.add_argument("--epochs", type=int, default=200)
     parser.add_argument("--batch-size", type=int, default=8192)
@@ -286,6 +291,12 @@ def main() -> None:
     parser.add_argument("--log-every", type=int, default=10)
     parser.add_argument("--early-stopping-patience", type=int, default=30)
     args = parser.parse_args()
+
+    np.random.seed(args.seed)
+    torch, _, _ = require_torch()
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
 
     selected = ["unet", "pinn", "fno", "deeponet"] if args.model == "all" else [args.model]
     for name in selected:

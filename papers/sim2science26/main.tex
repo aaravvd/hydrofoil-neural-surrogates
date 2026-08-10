@@ -23,18 +23,16 @@ A Benchmark of Neural Surrogates}
 Neural flow surrogates are usually compared by field error, although their
 practical value often lies in the designs they select. We compare CNN-U-Net, a
 physics-regularized point network, FNO, and DeepONet on 381 OpenFOAM simulations
-of hydrofoils in water, using 64 cases from two unseen NACA families for
-validation. The
+of hydrofoils in water. Complete families form disjoint training, validation,
+and final-test sets, and every architecture is trained with three seeds. The
 models predict RANS fields, lift, drag, and pressure-based cavitation-inception
 risk, and then drive the same four-parameter hydrofoil shape-optimization loop.
-The physics-regularized network gives the best pressure accuracy
-($R^2=0.966$), cavitation F1 score (0.921), and inference speed; DeepONet gives
-the most accurate force coefficients. Inference is 917--1801 times faster than
-OpenFOAM. Fresh OpenFOAM simulations confirm $L/D$ gains of 2.3--79.7\% for
-the selected designs, while a matched direct-CFD search reaches $L/D=29.89$.
-Three surrogates select CFD-verified designs above that local-search reference,
-with the best reaching 45.96. Field accuracy, force accuracy, and optimization
-performance are related but not interchangeable.
+DeepONet gives the lowest mean pressure, $C_p$, lift, and drag errors on the
+untouched test families; the physics-regularized model is close and fastest.
+Inference is 384--867 times faster than OpenFOAM. Across seeds, endpoint solves
+give mean $L/D$ from 22.10 to 37.90, but a three-level grid study shows that
+drag remains mesh-sensitive. Field accuracy, force accuracy, search quality,
+and simulator verification are related but not interchangeable.
 \end{abstract}
 
 \section{Introduction}
@@ -102,10 +100,11 @@ $y/c\in[-0.75,0.75]$. Inputs include coordinates, operating parameters, three
 NACA descriptors, a fluid mask, and signed distance to the profile.
 
 Three simulations with $|C_L|$ or $|C_D|>5$ are discarded before splitting,
-leaving 381 cases. All 64 cases from NACA 0015 and NACA 2412 form the
-validation set; the remaining 317 cases train the models. Because complete
-families are reserved, neither validation geometry appears in training at a
-different operating condition.
+leaving 381 cases. NACA 0015 and 2412 provide 64 validation cases for early
+stopping; NACA 0018 and 4418 provide an untouched 64-case test set used only
+for final reporting. The remaining 253 cases from eight families train the
+models. This fixed partition is identical for every architecture and seed, and
+no validation or test geometry appears in training at another operating point.
 All retained solves reach iteration 300. The 95th-percentile maximum initial
 residual at that iteration is $1.27\times10^{-4}$; the corresponding
 late-window spans are 0.0059 in $C_L$ and $2.65\times10^{-4}$ in $C_D$.
@@ -145,10 +144,17 @@ a lightweight physics regularizer, not a data-free PINN or complete RANS
 residual.
 
 All models use AdamW with learning rate $2\times10^{-3}$, weight decay
-$10^{-4}$, at most 120 epochs, patience 20, gradient clipping, and seed 7.
+$10^{-4}$, at most 120 epochs, patience 20, and gradient clipping. Each
+architecture is trained with seeds 7, 17, and 27 on the same split.
 Normalization uses training cases only. The best checkpoint is selected by
 validation loss. Model size ranges from 9,930 to 595,914 parameters
 (Table~\ref{tab:performance}).
+
+Data, targets, optimizer, stopping rule, and evaluation budget are shared, but
+parameter counts are reported rather than artificially matched: equal width is
+not equal capacity across convolutional, spectral, branch--trunk, and pointwise
+models. These are compact canonical configurations, and no hyperparameter is
+selected on the test families.
 
 Optimization uses dedicated $C_L$ and $C_D$ output heads supervised by
 OpenFOAM's total force coefficients. Pressure integration on the coarse common
@@ -163,16 +169,20 @@ $t\in[0.06,0.20]$, and $\alpha\in[-4,10]^{\circ}$. We launch Nelder--Mead
 \citep{nelder1965simplex} from NACA 0012, 2412, and 4415 and give every run the
 same 40-iteration budget. The objective is
 \begin{equation}
-J(\theta)=\frac{C_L}{|C_D|+10^{-6}}-10P_M-5f_M,
+J(\theta)=\frac{C_L}{|C_D|+10^{-6}}.
 \end{equation}
-where $P_M$ penalizes a predicted minimum cavitation margin below 5000~Pa and
-$f_M$ is the fraction of cells below that margin. The search calls only the
-surrogate; OpenFOAM is not used inside the loop. Since the nominal-pressure
-margin stays above the threshold for every selected design, the penalty is
-inactive in this experiment. We return the best design observed within the
+The search calls only the surrogate; OpenFOAM is not used inside the loop, and
+cavitation margin is retained only as a secondary diagnostic. We return the
+best design observed within the
 fixed budget, select the strongest of the three starts for each architecture,
 and then generate a new mesh and independent OpenFOAM simulation for that
 winner.
+
+The optimizer is continuous although the training geometries are discrete. It
+queries intermediate four-digit descriptors $(m,p,t)$ within the stated bounds
+and can move beyond the convex coverage of the training families near a bound.
+We retain every query and independently remesh and solve each selected endpoint
+with CFD; this validates the reported design, not the full learned surface.
 
 The direct-CFD baseline repeats this protocol with the same starts, bounds,
 objective, tolerances, and 40-iteration budget, but OpenFOAM supplies every
@@ -180,29 +190,34 @@ objective value. It is distinct from the one-solve endpoint checks of the
 surrogate winners.
 
 \section{Results}
-\subsection{Validation accuracy and computational cost}
-Table~\ref{tab:performance} reports results on the 64-case validation set. The physics-regularized network is best for pressure and $C_p$, with pressure RMSE 6.78~Pa and $R^2=0.966$. DeepONet gives the best $U_x$, $U_y$, $C_L$, and $C_D$ coefficients. The grid operators are weaker in this low-data setting. FNO retains useful force trends, while CNN-U-Net predicts $C_p$ and forces better than absolute pressure or streamwise velocity.
+\subsection{Final-test accuracy and computational cost}
+Table~\ref{tab:performance} reports mean and one sample standard deviation over
+three seeds on the untouched NACA 0018/4418 test set. DeepONet gives the lowest
+mean pressure, $C_p$, $C_L$, and $C_D$ errors. The physics-regularized model is
+consistently second; CNN-U-Net is notably seed-sensitive.
 
 \begin{table}[t]
-\caption{Validation performance, model size, and cost. Force RMSE is computed case-wise against OpenFOAM total coefficients.}
+\caption{Final-test RMSE (mean $\pm$ sample standard deviation over three seeds), size, and speedup.}
 \label{tab:performance}
 \centering
 \setlength{\tabcolsep}{4.5pt}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{lrrrrrr}
 \toprule
-Model & $p$ RMSE & $p$ $R^2$ & $C_L$ RMSE & $C_D$ RMSE & Params. & Speedup \\
+Model & $p$ (Pa) & $C_p$ & $C_L$ & $C_D$ & Params. & Speedup \\
 \midrule
-CNN-U-Net & 28.52 & 0.392 & 0.0991 & 0.00453 & 485,178 & 1,148$\times$ \\
-Physics-reg. MLP & \textbf{6.78} & \textbf{0.966} & \textbf{0.0245} & 0.00204 & \textbf{9,930} & \textbf{1,801$\times$} \\
-FNO & 22.73 & 0.614 & 0.1383 & 0.00957 & 595,914 & 1,028$\times$ \\
-DeepONet & 8.55 & 0.945 & 0.0268 & \textbf{0.00184} & 100,746 & 917$\times$ \\
+CNN-U-Net & $28.32\pm14.18$ & $0.0657\pm.0373$ & $0.258\pm.200$ & $0.00871\pm.00522$ & 485,178 & $544\pm13$ \\
+Physics-reg. MLP & $11.56\pm0.48$ & $0.0445\pm.0012$ & $0.0352\pm.0056$ & $0.00328\pm.00029$ & \textbf{9,930} & \textbf{$867\pm1$} \\
+FNO & $27.79\pm1.07$ & $0.0643\pm.0040$ & $0.248\pm.020$ & $0.0103\pm.00054$ & 595,914 & $464\pm6$ \\
+DeepONet & \textbf{$10.74\pm1.48$} & \textbf{$0.0411\pm.0045$} & \textbf{$0.0304\pm.0081$} & \textbf{$0.00339\pm.00089$} & 100,746 & $384\pm2$ \\
 \bottomrule
 \end{tabular}
+}
 \end{table}
 
-Measured training times are 868, 104, 547, and 54~s for CNN-U-Net, the physics-regularized network, FNO, and DeepONet, respectively. Median OpenFOAM execution time is 12.4~s per case, while pressure-field inference requires 0.0069--0.0135~s, yielding 917--1801$\times$ speedups. The benchmark used an 8-core Apple M2 Mac mini with 16~GB memory; PyTorch 2.13 ran on CPU and single-process OpenFOAM 9 ran in Docker. These numbers measure repeated local inference and exclude data generation and mesh construction.
+Mean training times are 556, 67, 270, and 47~s for CNN-U-Net, the physics-regularized network, FNO, and DeepONet. Median OpenFOAM execution time is 12.4~s per case, while complete-field inference takes 14--32~ms, yielding 384--867$\times$ speedups. The benchmark used an 8-core Apple M2 Mac mini with 16~GB memory; PyTorch ran on CPU and OpenFOAM 9 ran in Docker.
 
-Figure~\ref{fig:pressure} shows a representative validation case from the unseen NACA 0015 family. The
+Figure~\ref{fig:pressure} shows a representative final-test case from the unseen NACA 0018 family. The
 pointwise models reproduce the leading-edge pressure structure most closely;
 CNN-U-Net smooths the extrema and FNO introduces spatial texture. A common
 color scale makes those differences directly comparable across all five panels.
@@ -210,14 +225,18 @@ color scale makes those differences directly comparable across all five panels.
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.98\textwidth]{figures/heldout_pressure.png}
-\caption{Absolute-pressure prediction for a representative NACA 0015
-validation case (case 160), shown over $x/c\in[-0.25,1.25]$ and
+\caption{Absolute-pressure prediction for a representative NACA 0018
+test case (case 179), shown over $x/c\in[-0.25,1.25]$ and
 $y/c\in[-0.375,0.375]$. Every panel uses the same color scale.}
 \label{fig:pressure}
 \end{figure*}
 
 \subsection{Cavitation-inception screening}
-The pressure-threshold labels are highly imbalanced, so accuracy is not useful here. The physics-regularized network achieves precision 0.927, recall 0.916, and F1 0.921. DeepONet follows at F1 0.913. CNN-U-Net has the highest recall (0.958) but lower precision (0.796), while FNO obtains F1 0.771. Twenty-four validation case/ambient-pressure combinations contain at-risk cells. This measures pressure-based inception screening, not cavity dynamics. Multiphase labels are required to predict vapor fraction, cavity length, or shedding \cite{brennen1995cavitation}.
+The pressure-threshold labels are highly imbalanced, so we report F1 rather
+than accuracy. DeepONet obtains $0.900\pm0.008$, the physics-regularized model
+$0.867\pm0.008$, CNN-U-Net $0.758\pm0.198$, and FNO $0.724\pm0.065$. This is a
+secondary low-$C_p$ diagnostic, not a prediction of cavity dynamics
+\cite{brennen1995cavitation}.
 
 \subsection{Shape optimization against direct CFD}
 Figure~\ref{fig:optimization} reports the complete $L/D$ comparison: the
@@ -226,17 +245,11 @@ design, and the result of remeshing that design and solving it once in
 OpenFOAM. This one-solve endpoint check is distinct from the direct baseline,
 which places OpenFOAM inside the matched optimizer.
 
-All four surrogate winners improve on their starts. The physics-regularized
-network moves from $L/D=25.57$ to 45.96, an absolute gain of 20.39 (79.7\%);
-DeepONet gains 14.97, CNN-U-Net gains 12.55, and FNO gains 0.58. Direct CFD
-reaches 17.80, 27.33, and 29.89 from NACA 0012, 2412, and 4415, respectively,
-using 266 evaluations in total. Its best gain is 4.32 (16.9\%).
-The selected $(m,p,t,\alpha)$ values are $(0.0325,0.550,0.060,3.06^\circ)$,
-$(0.0667,0.388,0.060,1.24^\circ)$,
-$(0.0391,0.372,0.168,4.23^\circ)$, and
-$(0.0335,0.328,0.060,1.60^\circ)$ for CNN-U-Net, the physics-regularized
-network, FNO, and DeepONet, respectively; direct CFD selects
-$(0.0407,0.417,0.144,3.98^\circ)$.
+Across three selected endpoints per architecture, medium-grid OpenFOAM gives
+$L/D=24.44\pm1.35$ for CNN-U-Net, $37.90\pm1.59$ for the physics-regularized
+network, $22.10\pm3.46$ for FNO, and $37.47\pm5.95$ for DeepONet. The matched
+direct-CFD search reaches 29.89. These values are not mesh-independent: on the
+seed-7 winners, medium-to-fine $L/D$ shifts are 16--20\%.
 
 \begin{figure}[t]
 \centering
@@ -249,61 +262,48 @@ predictions, fresh OpenFOAM endpoint checks, and direct CFD.}
 \end{figure}
 
 \section{Discussion}
-\textbf{Accuracy and decision quality.} The results expose two distinct error
-modes. DeepONet has the lowest endpoint $L/D$ error (2.1\%), matching its strong
-force metrics, yet the physics-regularized network selects the better design:
-$L/D=45.96$ rather than 40.86. CNN-U-Net and FNO underpredict by 21.5\% and
-19.3\%, but only CNN-U-Net locates a large gain. Value calibration and candidate
-ranking are therefore separate capabilities; endpoint CFD changes the model
-comparison rather than merely confirming the force-error table.
+DeepONet is the best final-test predictor, but its optimized endpoints vary more
+across seeds than those of the physics-regularized network. CNN-U-Net is
+unstable in both force prediction and optimization; FNO is more repeatable but
+selects lower-performing designs. Accuracy, candidate ranking, and seed
+robustness are therefore distinct.
 
-The matched direct search reaches only $L/D=29.89$. CNN-U-Net, DeepONet, and
-the physics-regularized model exceed it by 8.56, 10.97, and 16.07 after CFD
-validation, while FNO remains below it. The direct run is not a global optimum;
-it shows that learned objectives can lead the same budgeted local optimizer to
-different basins.
+All 12 grid-study runs converge iteratively by 1,000 iterations, with final
+residuals below $10^{-7}$ and negligible late force drift. Lift changes by at
+most about 4\% from medium to fine, but drag changes by 16--24\%. Thus, a fresh
+OpenFOAM endpoint is a standard and useful verification step, yet it is not by
+itself a grid-independent validation. This is precisely the simulator
+imperfection exposed by carrying the benchmark through the design loop.
 
-\textbf{Search behavior.} Initialization matters. The physics-regularized
-network reaches predicted $L/D=43.55$ and 43.62 from the two cambered starts but
-only 22.35 from NACA 0012; FNO stays between 16.18 and 21.11. The three stronger
-designs approach 6\% thickness, whereas FNO selects 16.8\%. The pointwise models
-thus learn a sharper preference for thin, cambered profiles in this region.
-
-\textbf{Cost and cavitation.} Across the three starts, the models require
-199--249 evaluations, approximately 41--52 minutes if replaced one-for-one by
-the measured CFD solve versus 1.4--3.0 s of surrogate inference. The measured
-direct baseline uses 266 CFD evaluations and 38.5 minutes of summed wall time;
-each surrogate additionally requires one endpoint solve.
-
-All selected designs have a nominal predicted cavitation margin near 99 kPa,
-so the penalty in Eq.~(7) is inactive. The cavitation results establish
-screening accuracy, not a cavitation-shaped optimum; demonstrating that tradeoff
-requires reduced ambient pressure or multiphase labels. The remaining scope is
-one seed, steady 2D RANS, and the NACA four-digit family; grid convergence and
-external force validation remain future checks.
+The continuous optimizer also queries descriptors between and near the bounds
+of twelve discrete families. Endpoint CFD checks the selected shape, not the
+entire learned surface. All winners remain far from vapor pressure, so
+cavitation is a secondary diagnostic rather than an active constraint. The
+remaining scope is steady 2D RANS and the NACA four-digit space.
 
 \section{Conclusion}
-We followed four neural surrogates through the complete path from RANS-field
-prediction to a design decision. On unseen NACA families, the
-physics-regularized point network gives the best pressure result
-($R^2=0.966$) and cavitation-inception F1 score (0.921), while DeepONet gives
-the most accurate lift and drag. Every model evaluates a pressure field in
-6.9--13.5~ms, corresponding to 917--1801$\times$ speedup over the measured
-OpenFOAM runs.
-
-The HSO experiment changes the ranking from a simple accuracy table. DeepONet
-predicts its winner most accurately, but the physics-regularized network finds
-the best design, increasing OpenFOAM $L/D$ from 25.57 to 45.96. CNN-U-Net and
-DeepONet also find substantial gains, from 25.89 to 38.45 and 40.86,
-respectively, whereas FNO reaches only 26.15 from 25.57. The direct-CFD search
-reaches 29.89, confirming that evaluator choice changes which basin a limited
-local search reaches. A useful scientific
-surrogate should therefore be judged on both its validation predictions and
-the consequence of acting on them.
+On an untouched family-level test set, DeepONet gives the lowest mean field and
+force errors, while the smaller physics-regularized model is close and fastest.
+Following all models through a multi-start optimizer reveals seed-dependent
+design decisions that test error alone does not predict. The endpoint and grid
+checks add the crucial final result: a surrogate should be judged not only by
+prediction and speed, but by the consequence of acting on it and the numerical
+uncertainty of the simulator used to verify that action.
 
 \bibliographystyle{plainnat}
 \bibliography{references}
 
 \input{checklist}
+
+\appendix
+\section{Complete Optimization Traces}
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.92\textwidth]{figures/optimization_traces.png}
+\caption{All three optimization starts and three training seeds per surrogate,
+with the three direct-CFD starts. Lines show best-so-far objective; every raw
+evaluation is included in the anonymous artifact.}
+\label{fig:traces}
+\end{figure}
 
 \end{document}

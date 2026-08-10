@@ -12,7 +12,14 @@ DOCKER_IMAGE = "openfoam/openfoam9-graphical-apps"
 CONTAINER_ROOT = Path("/home/openfoam")
 
 
-def write_case(case: Case, case_dir: Path, airfoil_coords=None) -> None:
+def write_case(
+    case: Case,
+    case_dir: Path,
+    airfoil_coords=None,
+    mesh_lc_foil: float = 0.015,
+    mesh_lc_far: float = 1.0,
+    end_time: int = 300,
+) -> None:
     """Write a minimal simpleFoam-ready case skeleton."""
     for sub in ["0", "constant", "system"]:
         (case_dir / sub).mkdir(parents=True, exist_ok=True)
@@ -37,7 +44,7 @@ def write_case(case: Case, case_dir: Path, airfoil_coords=None) -> None:
         + "\n"
     )
 
-    _write_gmsh_geo(case, case_dir, ax, ay)
+    _write_gmsh_geo(case, case_dir, ax, ay, mesh_lc_foil=mesh_lc_foil, mesh_lc_far=mesh_lc_far)
     (case_dir / "constant" / "transportProperties").write_text(
         f"""{_foam_header("dictionary", "transportProperties")}
 transportModel  Newtonian;
@@ -55,7 +62,7 @@ RAS
 }}
 """
     )
-    _write_system_files(case, case_dir)
+    _write_system_files(case, case_dir, end_time=end_time)
     _write_initial_fields(case, case_dir)
 
 
@@ -130,7 +137,7 @@ def container_path(path: Path, repo_root: Path) -> str:
     return str(CONTAINER_ROOT / rel)
 
 
-def _write_gmsh_geo(case: Case, case_dir: Path, ax, ay) -> None:
+def _write_gmsh_geo(case: Case, case_dir: Path, ax, ay, mesh_lc_foil: float, mesh_lc_far: float) -> None:
     far_x0 = -20.0 * case.chord
     far_x1 = 20.0 * case.chord
     far_y0 = -12.0 * case.chord
@@ -138,8 +145,8 @@ def _write_gmsh_geo(case: Case, case_dir: Path, ax, ay) -> None:
     lines = [
         'SetFactory("Built-in");',
         "Mesh.MshFileVersion = 2.2;",
-        "lcFar = 1.0;",
-        "lcFoil = 0.015;",
+        f"lcFar = {mesh_lc_far:.8g};",
+        f"lcFoil = {mesh_lc_foil:.8g};",
         f"Point(1) = {{{far_x0}, {far_y0}, 0, lcFar}};",
         f"Point(2) = {{{far_x1}, {far_y0}, 0, lcFar}};",
         f"Point(3) = {{{far_x1}, {far_y1}, 0, lcFar}};",
@@ -176,7 +183,7 @@ def _write_gmsh_geo(case: Case, case_dir: Path, ax, ay) -> None:
     (case_dir / "mesh.geo").write_text("\n".join(lines) + "\n")
 
 
-def _write_system_files(case: Case, case_dir: Path) -> None:
+def _write_system_files(case: Case, case_dir: Path, end_time: int = 300) -> None:
     alpha = math.radians(case.AoA)
     drag_x = math.cos(alpha)
     drag_y = math.sin(alpha)
@@ -188,7 +195,7 @@ def _write_system_files(case: Case, case_dir: Path) -> None:
 startFrom       startTime;
 startTime       0;
 stopAt          endTime;
-endTime         300;
+endTime         {end_time};
 deltaT          1;
 writeControl    timeStep;
 writeInterval   100;

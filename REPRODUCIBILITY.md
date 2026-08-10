@@ -2,10 +2,13 @@
 
 ## Scope
 
-The paper reports a deterministic NACA-family validation split with seed 7.
-NACA 0015 and NACA 2412 form the 64-case validation set. The other 317 valid
-cases are used for training. Three CFD cases are removed by the predeclared
-quality rule `abs(Cl) <= 5` and `abs(Cd) <= 5`.
+The paper uses the fixed, disjoint family partition in
+`configs/family_split.json`. NACA 0015 and 2412 form the 64-case validation
+set used for early stopping. NACA 0018 and 4418 form an untouched 64-case test
+set used only after training and checkpoint selection. The other 253 valid
+cases train the models. Three CFD cases are removed by the predeclared quality
+rule `abs(Cl) <= 5` and `abs(Cd) <= 5`. Every architecture is trained with
+seeds 7, 17, and 27 without changing this partition.
 
 The reported target order is:
 
@@ -70,10 +73,10 @@ without rerunning all OpenFOAM cases.
 ## Expected Outputs
 
 - `corrected_production/data/processed_grids/`: common-grid RANS cases
-- `training_runs/corrected/<model>/best.pt`: selected checkpoints
-- `paper_results/corrected/`: field, force, cavitation, runtime, and loss tables
-- `hso_results/corrected/optimized/`: optimizer traces and selected designs
-- `hso_results/corrected/optimized/openfoam_validation.csv`: CFD reruns
+- `training_runs/revised/seed_<seed>/<model>/best.pt`: selected checkpoints
+- `paper_results/revised/`: per-seed and mean/std final-test metrics
+- `hso_results/revised/seed_<seed>/`: all optimizer traces and selected designs
+- `hso_results/revised/grid_study/grid_convergence.csv`: key-design grid checks
 - `hso_results/corrected/openfoam_baseline/`: matched direct-CFD optimization traces and winners
 - `papers/*/main.pdf`: compiled manuscripts
 
@@ -83,8 +86,10 @@ can be reproduced without storing large binaries in the source repository.
 
 ## Claim Boundary
 
-The cavitation task is pressure-threshold inception-risk screening derived from
-single-phase RANS. It is not a multiphase prediction of vapor fraction, cavity
-length, collapse, or shedding. The random profiles and oval are tests outside
-the training geometry family; the paper's validated optimization claims concern
-the NACA parameterization and the designs rerun in OpenFOAM.
+The cavitation task is a secondary pressure-threshold inception-risk diagnostic
+derived from single-phase RANS. It is not part of the primary optimization
+objective and is not a multiphase prediction of vapor fraction, cavity length,
+collapse, or shedding. The continuous optimizer searches the bounded NACA
+four-digit parameterization between the discrete training families; CFD endpoint
+and grid checks test the selected designs, but do not establish uniform accuracy
+throughout that continuous domain.

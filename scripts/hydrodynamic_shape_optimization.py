@@ -321,7 +321,14 @@ def distance_to_polyline(x: np.ndarray, y: np.ndarray, ax: np.ndarray, ay: np.nd
     return np.sqrt(np.min((px - qx) ** 2 + (py - qy) ** 2, axis=-1))
 
 
-def score_candidate(model_name: str, candidate: Candidate, pred: dict[str, np.ndarray], grid: dict[str, np.ndarray], margin_threshold: float) -> dict:
+def score_candidate(
+    model_name: str,
+    candidate: Candidate,
+    pred: dict[str, np.ndarray],
+    grid: dict[str, np.ndarray],
+    margin_threshold: float,
+    apply_cavitation_penalty: bool = True,
+) -> dict:
     p = pred.get("p")
     margin = pred.get("cavitation_margin")
     cp = pred.get("Cp")
@@ -334,7 +341,9 @@ def score_candidate(model_name: str, candidate: Candidate, pred: dict[str, np.nd
     risky_fraction = float(np.nanmean(margin < margin_threshold)) if margin is not None else float("nan")
     cp_min = float(np.nanmin(cp)) if cp is not None else float("nan")
     cav_penalty = max(0.0, (margin_threshold - min_margin) / max(margin_threshold, 1e-9)) if np.isfinite(min_margin) else 0.0
-    objective = cl / (abs(cd) + 1e-6) - 10.0 * cav_penalty - 5.0 * risky_fraction
+    objective = cl / (abs(cd) + 1e-6)
+    if apply_cavitation_penalty:
+        objective -= 10.0 * cav_penalty + 5.0 * risky_fraction
     return {
         "model": model_name,
         "candidate_id": candidate.candidate_id,

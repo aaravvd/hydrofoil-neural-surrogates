@@ -41,9 +41,9 @@ def metric(rows: list[dict[str, str]], model: str, field: str, name: str) -> flo
 
 
 def tradeoff_figure() -> None:
-    fields = read_csv(ROOT / "paper_results/corrected/field_metrics.csv")
-    runtime = {r["model"]: r for r in read_csv(ROOT / "paper_results/corrected/runtime_speedup.csv")}
-    with (ROOT / "paper_results/corrected/cavitation_risk/cavitation_risk_summary.json").open() as handle:
+    fields = read_csv(ROOT / "paper_results/revised/seed_7/field_metrics.csv")
+    runtime = {r["model"]: r for r in read_csv(ROOT / "paper_results/revised/seed_7/runtime_speedup.csv")}
+    with (ROOT / "paper_results/revised/seed_7/cavitation_risk/cavitation_risk_summary.json").open() as handle:
         cav = json.load(handle)
 
     panels = [
@@ -67,7 +67,7 @@ def tradeoff_figure() -> None:
 
 
 def field_r2_figure() -> None:
-    rows = read_csv(ROOT / "paper_results/corrected/field_metrics.csv")
+    rows = read_csv(ROOT / "paper_results/revised/seed_7/field_metrics.csv")
     fields = ["Ux", "Uy", "p", "Cp", "nut", "k", "omega"]
     field_labels = [r"$U_x$", r"$U_y$", r"$p$", r"$C_p$", r"$\nu_t$", r"$k$", r"$\omega$"]
     values = np.array([[metric(rows, model, field, "r2") for field in fields] for model in MODELS])
@@ -91,7 +91,7 @@ def field_r2_figure() -> None:
 
 
 def optimization_figure() -> None:
-    rows = read_csv(ROOT / "hso_results/corrected/optimized/openfoam_validation.csv")
+    rows = read_csv(ROOT / "hso_results/revised/seed_7/openfoam_validation.csv")
     by_model = {r["model"]: r for r in rows}
     predicted = [float(by_model[m]["predicted_L_over_D"]) for m in MODELS]
     validated = [float(by_model[m]["openfoam_L_over_D"]) for m in MODELS]
@@ -120,7 +120,7 @@ def optimization_figure() -> None:
 
 
 def aso_results_figure() -> None:
-    rows = read_csv(ROOT / "hso_results/corrected/optimized/openfoam_validation.csv")
+    rows = read_csv(ROOT / "hso_results/revised/seed_7/openfoam_validation.csv")
     by_model = {row["model"]: row for row in rows}
     cfd_summaries = read_csv(
         ROOT / "hso_results/corrected/openfoam_baseline/optimization_summary.csv"
@@ -196,15 +196,15 @@ def aso_results_figure() -> None:
 
 def copy_existing() -> None:
     sources = {
-        ROOT / "paper_results/corrected/training_loss_curves.png": OUT / "training_loss_curves.png",
-        ROOT / "paper_results/corrected/model_forces/model_force_parity.png": OUT / "force_parity.png",
-        ROOT / "figures/corrected_model_predictions_heldout/case_160_p_predictions.png": OUT / "heldout_pressure.png",
+        ROOT / "paper_results/revised/seed_7/training_loss_curves.png": OUT / "training_loss_curves.png",
+        ROOT / "paper_results/revised/seed_7/model_forces/model_force_parity.png": OUT / "force_parity.png",
+        ROOT / "figures/revised_model_predictions_test/case_179_p_predictions.png": OUT / "heldout_pressure.png",
     }
     for source, destination in sources.items():
         shutil.copy2(source, destination)
     SIM_OUT.mkdir(parents=True, exist_ok=True)
     shutil.copy2(
-        ROOT / "figures/corrected_model_predictions_heldout/case_160_p_predictions.png",
+        ROOT / "figures/revised_model_predictions_test/case_179_p_predictions.png",
         SIM_OUT / "heldout_pressure.png",
     )
 

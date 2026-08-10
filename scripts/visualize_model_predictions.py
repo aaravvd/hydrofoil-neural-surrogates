@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from models.architectures import build_model
-from models.datasets import HydrofoilGridStore, denormalize_output_grid, load_grid_paths, load_normalization, split_paths
+from models.datasets import HydrofoilGridStore, denormalize_output_grid, load_grid_paths, load_normalization, split_paths, split_paths_by_manifest
 
 
 MODEL_ORDER = ["unet", "pinn", "fno", "deeponet"]
@@ -46,7 +46,8 @@ def main() -> None:
     parser.add_argument("--models", default="all", help="Comma list from dnn,pinn,fno,deeponet or all.")
     parser.add_argument("--num-cases", type=int, default=3)
     parser.add_argument("--case", action="append", default=[], help="Specific case id or grid path. Can be repeated.")
-    parser.add_argument("--split", choices=["validation", "train", "all"], default="validation")
+    parser.add_argument("--split", choices=["test", "validation", "train", "all"], default="test")
+    parser.add_argument("--split-manifest", type=Path, default=ROOT / "configs" / "family_split.json")
     parser.add_argument("--val-fraction", type=float, default=0.15)
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--limit-cases", type=int, default=None)
@@ -126,8 +127,14 @@ def choose_cases(args) -> list[Path]:
         return paths[: args.num_cases]
 
     paths = load_grid_paths(args.data_dir, args.limit_cases)
-    train_paths, val_paths = split_paths(paths, args.val_fraction, args.seed)
-    if args.split == "validation":
+    if args.split_manifest:
+        train_paths, val_paths, test_paths = split_paths_by_manifest(paths, args.split_manifest)
+    else:
+        train_paths, val_paths = split_paths(paths, args.val_fraction, args.seed)
+        test_paths = []
+    if args.split == "test":
+        chosen = test_paths
+    elif args.split == "validation":
         chosen = val_paths or paths
     elif args.split == "train":
         chosen = train_paths

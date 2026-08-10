@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 from pathlib import Path
 from typing import Iterable
 
@@ -106,6 +107,37 @@ def split_paths_by_naca(paths: list[Path], val_fraction: float, seed: int) -> tu
     if not train:
         train, val = val, train
     return sorted(train), sorted(val)
+
+
+def split_paths_by_manifest(paths: list[Path], manifest_path: Path) -> tuple[list[Path], list[Path], list[Path]]:
+    """Apply a fixed family-level train/validation/test split."""
+    manifest = json.loads(manifest_path.read_text())
+    required = {"train", "validation", "test"}
+    if not required.issubset(manifest):
+        raise ValueError(f"{manifest_path} must define {sorted(required)}")
+    requested = {name: {str(label) for label in manifest[name]} for name in required}
+    overlaps = {
+        "train/validation": requested["train"] & requested["validation"],
+        "train/test": requested["train"] & requested["test"],
+        "validation/test": requested["validation"] & requested["test"],
+    }
+    if any(overlaps.values()):
+        raise ValueError(f"Family split is not disjoint: {overlaps}")
+
+    groups: dict[str, list[Path]] = {}
+    for path in paths:
+        with np.load(path, allow_pickle=True) as data:
+            groups.setdefault(str(data["naca"]), []).append(path)
+    assigned = set().union(*requested.values())
+    missing = assigned - set(groups)
+    unassigned = set(groups) - assigned
+    if missing or unassigned:
+        raise ValueError(f"Family split mismatch; missing={sorted(missing)}, unassigned={sorted(unassigned)}")
+
+    def collect(name: str) -> list[Path]:
+        return sorted(path for label in requested[name] for path in groups[label])
+
+    return collect("train"), collect("validation"), collect("test")
 
 
 def field_names(fields: str | Iterable[str] | None) -> list[str]:

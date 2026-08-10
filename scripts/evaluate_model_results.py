@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT))
 import numpy as np
 
 from models.architectures import build_model
-from models.datasets import HydrofoilGridStore, denormalize_output_grid, filter_force_outliers, load_grid_paths, load_normalization, split_paths, split_paths_by_naca
+from models.datasets import HydrofoilGridStore, denormalize_output_grid, filter_force_outliers, load_grid_paths, load_normalization, split_paths, split_paths_by_manifest, split_paths_by_naca
 
 
 MODEL_ORDER = ["unet", "pinn", "fno", "deeponet"]
@@ -37,9 +37,10 @@ def main() -> None:
     parser.add_argument("--data-dir", type=Path, default=ROOT / "data" / "processed_grids")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "paper_results")
     parser.add_argument("--models", default="all")
-    parser.add_argument("--split", choices=["validation", "train", "all"], default="validation")
+    parser.add_argument("--split", choices=["test", "validation", "train", "all"], default="test")
     parser.add_argument("--val-fraction", type=float, default=0.15)
     parser.add_argument("--split-strategy", choices=["random", "naca"], default="naca")
+    parser.add_argument("--split-manifest", type=Path, default=ROOT / "configs" / "family_split.json")
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--limit-cases", type=int, default=None)
     parser.add_argument("--max-abs-force-coefficient", type=float, default=5.0)
@@ -110,8 +111,14 @@ def choose_paths(args) -> list[Path]:
     paths, rejected = filter_force_outliers(paths, args.max_abs_force_coefficient)
     if rejected:
         print(f"[quality] excluded {len(rejected)} force outliers")
-    splitter = split_paths_by_naca if args.split_strategy == "naca" else split_paths
-    train_paths, val_paths = splitter(paths, args.val_fraction, args.seed)
+    if args.split_manifest:
+        train_paths, val_paths, test_paths = split_paths_by_manifest(paths, args.split_manifest)
+    else:
+        splitter = split_paths_by_naca if args.split_strategy == "naca" else split_paths
+        train_paths, val_paths = splitter(paths, args.val_fraction, args.seed)
+        test_paths = []
+    if args.split == "test":
+        return test_paths
     if args.split == "validation":
         return val_paths or paths
     if args.split == "train":
@@ -213,6 +220,7 @@ def write_json_summary(path: Path, args, paths: list[Path], field_rows: list[dic
         "split": args.split,
         "val_fraction": args.val_fraction,
         "split_strategy": args.split_strategy,
+        "split_manifest": str(args.split_manifest) if args.split_manifest else None,
         "seed": args.seed,
         "n_cases": len(paths),
         "cases": [p.name.replace("_grid.npz", "") for p in paths],

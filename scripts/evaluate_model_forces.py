@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from scripts.evaluate_model_results import load_checkpoints, predict_case, require_torch
 from scripts.hydrodynamic_shape_optimization import Candidate, pressure_force_coefficients
 from scripts.validate_force_calculator import read_force_coefficients
-from models.datasets import filter_force_outliers, split_paths, split_paths_by_naca
+from models.datasets import filter_force_outliers, split_paths, split_paths_by_manifest, split_paths_by_naca
 
 
 def main() -> None:
@@ -33,8 +33,9 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=16384)
     parser.add_argument("--device", default=None)
     parser.add_argument("--max-abs-force-coefficient", type=float, default=5.0)
-    parser.add_argument("--split", choices=["validation", "train", "all"], default="validation")
+    parser.add_argument("--split", choices=["test", "validation", "train", "all"], default="test")
     parser.add_argument("--split-strategy", choices=["random", "naca"], default="naca")
+    parser.add_argument("--split-manifest", type=Path, default=ROOT / "configs" / "family_split.json")
     parser.add_argument("--val-fraction", type=float, default=0.15)
     parser.add_argument("--seed", type=int, default=7)
     args = parser.parse_args()
@@ -52,9 +53,13 @@ def main() -> None:
         cl_index = bundle["norm"].target_fields.index("Cl") if "Cl" in bundle["norm"].target_fields else None
         cd_index = bundle["norm"].target_fields.index("Cd") if "Cd" in bundle["norm"].target_fields else None
         paths, _ = filter_force_outliers(sorted(args.data_dir.glob("case_*_grid.npz")), args.max_abs_force_coefficient)
-        splitter = split_paths_by_naca if args.split_strategy == "naca" else split_paths
-        train_paths, val_paths = splitter(paths, args.val_fraction, args.seed)
-        paths = val_paths if args.split == "validation" else train_paths if args.split == "train" else paths
+        if args.split_manifest:
+            train_paths, val_paths, test_paths = split_paths_by_manifest(paths, args.split_manifest)
+        else:
+            splitter = split_paths_by_naca if args.split_strategy == "naca" else split_paths
+            train_paths, val_paths = splitter(paths, args.val_fraction, args.seed)
+            test_paths = []
+        paths = test_paths if args.split == "test" else val_paths if args.split == "validation" else train_paths if args.split == "train" else paths
         for path in paths:
             truth, pred, mask, meta = predict_case(torch, bundle, path, args.batch_size, device)
             data = np.load(path, allow_pickle=True)

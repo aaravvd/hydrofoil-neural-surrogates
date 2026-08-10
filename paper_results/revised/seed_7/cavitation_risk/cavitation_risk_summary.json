@@ -1,0 +1,31 @@
+{
+  "interpretation": "Incipient pressure-threshold risk from single-phase RANS Cp; not multiphase cavitation simulation.",
+  "deeponet": {
+    "precision": 0.9536169190098533,
+    "recall": 0.8440757285683897,
+    "f1": 0.8955089144662605,
+    "accuracy": 0.9996975279606982,
+    "cases_with_true_risk": 26
+  },
+  "fno": {
+    "precision": 0.7290021536252692,
+    "recall": 0.8640714741544352,
+    "f1": 0.7908108634284046,
+    "accuracy": 0.9992980427511237,
+    "cases_with_true_risk": 26
+  },
+  "pinn": {
+    "precision": 0.9793140990745781,
+    "recall": 0.7653690704105509,
+    "f1": 0.8592238805970149,
+    "accuracy": 0.9996148871119473,
+    "cases_with_true_risk": 26
+  },
+  "unet": {
+    "precision": 0.9002422373926448,
+    "recall": 0.8696022122952564,
+    "f1": 0.8846570006492102,
+    "accuracy": 0.999651797846765,
+    "cases_with_true_risk": 26
+  }
+}

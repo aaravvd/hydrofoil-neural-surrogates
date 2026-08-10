@@ -37,6 +37,12 @@ def main() -> None:
     parser.add_argument("--grid-ny", type=int, default=64)
     parser.add_argument("--batch-size", type=int, default=16384)
     parser.add_argument("--cavitation-margin-threshold", type=float, default=5000.0)
+    parser.add_argument(
+        "--cavitation-mode",
+        choices=["diagnostic", "penalty"],
+        default="diagnostic",
+        help="Report cavitation margin only, or include its penalty in the optimization objective.",
+    )
     parser.add_argument("--rho", type=float, default=997.0)
     parser.add_argument("--nu", type=float, default=1e-6)
     parser.add_argument("--p-inf", type=float, default=101325.0)
@@ -67,7 +73,14 @@ def main() -> None:
                 ax, ay = coordinates_from_parameters(m, p, t, n=241, chord=args.chord)
                 candidate = make_candidate(f"continuous_{evaluation}", "continuous_naca", ax, ay, aoa, args)
                 prediction = predict_candidate(torch, bundle, candidate, grid, args.batch_size, device)
-                row = score_candidate(model_name, candidate, prediction, grid, args.cavitation_margin_threshold)
+                row = score_candidate(
+                    model_name,
+                    candidate,
+                    prediction,
+                    grid,
+                    args.cavitation_margin_threshold,
+                    apply_cavitation_penalty=args.cavitation_mode == "penalty",
+                )
                 traces.append(
                     {"model": model_name, "start": start_code, "evaluation": evaluation, "m": m, "p": p, "t": t, "AoA": aoa, **row}
                 )
@@ -97,6 +110,7 @@ def main() -> None:
                     "best_L_over_D": best["CL_over_abs_CD"],
                     "best_min_cavitation_margin": best["min_cavitation_margin"],
                     "best_objective": best["objective"],
+                    "cavitation_mode": args.cavitation_mode,
                 }
             )
 

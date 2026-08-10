@@ -1,0 +1,6 @@
+{
+  "description": "Fixed family-level split. Test families are never used for fitting, hyperparameter selection, or early stopping.",
+  "train": ["0006", "0008", "0010", "0012", "2415", "4412", "4415", "4421"],
+  "validation": ["0015", "2412"],
+  "test": ["0018", "4418"]
+}

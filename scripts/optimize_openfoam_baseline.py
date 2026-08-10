@@ -36,6 +36,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--p-vap", type=float, default=2300.0)
     parser.add_argument("--chord", type=float, default=1.0)
     parser.add_argument("--cavitation-margin-threshold", type=float, default=5000.0)
+    parser.add_argument("--cavitation-mode", choices=["diagnostic", "penalty"], default="diagnostic")
     parser.add_argument(
         "--import-dir", type=Path, action="append", default=[],
         help="Import cached trace rows from another baseline directory before optimizing.",
@@ -181,7 +182,9 @@ def main() -> None:
                     / max(args.cavitation_margin_threshold, 1e-9),
                 )
                 lift_to_drag = float(force["Cl"] / (abs(force["Cd"]) + 1e-6))
-                score = lift_to_drag - 10.0 * cavitation_penalty - 5.0 * risky_fraction
+                score = lift_to_drag
+                if args.cavitation_mode == "penalty":
+                    score -= 10.0 * cavitation_penalty + 5.0 * risky_fraction
                 row.update(
                     {
                         "status": "ok",
@@ -191,6 +194,7 @@ def main() -> None:
                         "min_cavitation_margin": min_margin,
                         "risky_cell_fraction": risky_fraction,
                         "objective": score,
+                        "cavitation_mode": args.cavitation_mode,
                         "wall_seconds": time.perf_counter() - started,
                     }
                 )

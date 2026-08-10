@@ -33,6 +33,8 @@ hso_results/**/openfoam_validation/
 /paper_results/*
 !/paper_results/corrected/
 !/paper_results/corrected/**
+!/paper_results/revised/
+!/paper_results/revised/**
 !/paper_results/corrected_results_report.md
 
 # LaTeX build products; source and final PDFs remain trackable.
@@ -44,6 +46,7 @@ papers/**/*.out
 papers/**/*.synctex.gz
 papers/**/main.pdf
 output/pdf/*_draft.pdf
+/output/anonymous_artifact/
 
 # OpenFOAM runtime logs and processor decompositions can get large quickly.
 openfoam_cases/**/log.*
