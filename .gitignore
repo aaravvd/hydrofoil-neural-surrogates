@@ -46,6 +46,7 @@ papers/**/*.out
 papers/**/*.synctex.gz
 papers/**/main.pdf
 output/pdf/*_draft.pdf
+papers/*.zip
 /output/anonymous_artifact/
 
 # OpenFOAM runtime logs and processor decompositions can get large quickly.

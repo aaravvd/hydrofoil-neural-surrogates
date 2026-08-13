@@ -28,7 +28,8 @@ Reynolds-averaged Navier--Stokes (RANS) fields, lift, drag, and pressure-based
 cavitation-inception risk before driving the same four-parameter shape search.
 DeepONet gives the lowest mean pressure, $C_p$, lift, and drag errors on the
 untouched test families; the physics-regularized network is close while using
-one tenth as many parameters. Inference is 384--867 times faster than CFD.
+one tenth as many parameters. Inference is 384--867 times faster than CFD,
+replacing repeated inner-loop solves while retaining CFD endpoint checks.
 Across seeds, fresh OpenFOAM endpoint solves give mean lift-to-drag ratios from
 22.10 to 37.90, but a three-level grid study shows that drag remains
 mesh-sensitive. Field accuracy, force accuracy, search quality, and numerical
@@ -73,6 +74,12 @@ and then checks the selected geometries with new CFD solutions. High-fidelity
 endpoint verification is standard in surrogate shape optimization, while a matched direct-CFD
 search provides a stronger reference when its cost is manageable
 \cite{li2022mlaso,shukla2023operators}.
+
+This setting is relevant to high-performance simulation workflows even though
+the present benchmark runs locally: independent CFD cases can be generated in
+parallel, the resulting ensemble trains a reusable surrogate, and batched
+inference replaces most solver calls in sweeps or design loops while selected
+designs return to CFD for verification.
 
 That experiment is the contribution of this paper; we do not propose a new
 architecture. We compare four representative families on the same RANS data,
@@ -534,8 +541,12 @@ works best at the present data scale.
 Runtime should likewise be interpreted at the workflow level. The 384--867
 fold online speedups exclude CFD data generation, which is the dominant
 up-front expense and must be amortized across operating sweeps or design
-studies. They support reuse of a trained surrogate, not replacement of the
-simulations needed to construct and verify it.
+studies. Case generation is embarrassingly parallel, and inference can be
+batched across candidate geometries, making the pipeline compatible with
+high-performance parameter-sweep and optimization workflows. We did not
+benchmark distributed training, multi-node CFD, or parallel scaling, so these
+results do not constitute a claim of cluster-level acceleration or replace the
+simulations needed to construct and verify the surrogate.
 
 The water operating conditions also clarify the cavitation result. At
 $Re=5\times10^5$ and the stated 1~m chord, $U_\infty=0.5$~m/s and the dynamic
