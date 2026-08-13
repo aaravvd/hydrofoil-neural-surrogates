@@ -179,38 +179,3 @@ useful for inception risk (`cavitation_margin`, `Cp`), but it is not a
 replacement for multiphase cavitating RANS labels such as vapor volume fraction,
 cavity length, or shedding dynamics. To train those, add solver outputs such as
 `alpha.vapor` to the OpenFOAM extraction and include that field in `--targets`.
-
-## Paper and Code Release
-
-This repository includes code, configurations, paper sources, compact CSV/JSON
-results, and final figures. Regenerable CFD artifacts are excluded by
-`.gitignore` because the corrected dataset is about 2.4 GB.
-
-The dataset and checkpoints are archived at Zenodo DOI
-`10.5281/zenodo.21845241`, and their SHA-256 checksums are recorded in
-`REPRODUCIBILITY.md`. For an AI4S submission:
-
-1. Keep this repository public; AI4S uses single-blind rather than anonymous review.
-2. Commit the exact paper source, scripts, compact results, and figures used in the PDF.
-3. Create a versioned tag and GitHub release, such as `ai4s26-submission-v1`.
-4. Upload the AI4S PDF through the SC submission system and enter the GitHub URL and Zenodo DOI where artifact links are requested.
-5. If the paper changes after review, create a camera-ready tag instead of moving the submission tag.
-
-This layout keeps the code easy to clone while preserving an immutable copy of
-the exact data and checkpoints used for the reported tables.
-
-For double-blind review, do not link this identifying repository or the named
-Zenodo record. Build the sanitized supplementary archive after all three seeds
-finish:
-
-```bash
-.venv/bin/python scripts/build_anonymous_artifact.py
-```
-
-The command removes identifying text and checkpoint paths, includes the 64
-untouched test grids and all revised checkpoints/results, checks for known
-identity strings, and refuses to produce an archive of 100 MB or more. Upload
-`output/anonymous_artifact/hydrofoil_surrogate_review_artifact.zip` as the
-conference supplementary ZIP. The full CFD training data must be placed behind
-an anonymous review URL; replace `ANONYMOUS_DATA_URL` in the artifact README
-only after verifying that the destination metadata does not reveal the authors.
