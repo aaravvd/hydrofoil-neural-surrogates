@@ -58,37 +58,118 @@ def masked_loss(torch, pred, target, mask, norm, bce_weight: float):
     return sum(losses)
 
 
-def pinn_residual_loss(torch, model, xb, norm, target_fields: list[str], nu_index: int, rho_index: int, weight: float):
+def pinn_residual_loss(
+    torch,
+    model,
+    xb,
+    norm,
+    target_fields: list[str],
+    nu_index: int,
+    rho_index: int,
+    weight: float,
+):
+    """Physics regularization for the pointwise supervised MLP.
+
+    Evaluates steady two-dimensional continuity and inviscid momentum
+    residuals using dimensional outputs and dimensional coordinates:
+
+        r_c = du/dx + dv/dy
+        r_x = u du/dx + v du/dy + (1/rho) dp/dx
+        r_y = u dv/dx + v dv/dy + (1/rho) dp/dy
+
+    Returns lambda_phys * mean(r_c^2 + r_x^2 + r_y^2).
+    """
     if weight <= 0:
         return torch.zeros((), device=xb.device)
+
     xb_req = xb.detach().clone().requires_grad_(True)
     pred = model(xb_req)
+
     names = {name: i for i, name in enumerate(target_fields)}
-    if not {"Ux", "Uy", "p"}.issubset(names):
-        return torch.zeros((), device=xb.device)
+    required = {"Ux", "Uy", "p"}
+    if not required.issubset(names):
+        missing = sorted(required - set(names))
+        raise ValueError(
+            f"Physics loss requires Ux, Uy, and p; missing {missing}"
+        )
 
-    out_std = torch.as_tensor(norm.output_std, dtype=pred.dtype, device=pred.device)
-    out_mean = torch.as_tensor(norm.output_mean, dtype=pred.dtype, device=pred.device)
-    Ux = pred[:, names["Ux"]] * out_std[names["Ux"]] + out_mean[names["Ux"]]
-    Uy = pred[:, names["Uy"]] * out_std[names["Uy"]] + out_mean[names["Uy"]]
-    p = pred[:, names["p"]] * out_std[names["p"]] + out_mean[names["p"]]
+    # Convert normalized predictions back to dimensional quantities.
+    out_std = torch.as_tensor(
+        norm.output_std,
+        dtype=pred.dtype,
+        device=pred.device,
+    )
+    out_mean = torch.as_tensor(
+        norm.output_mean,
+        dtype=pred.dtype,
+        device=pred.device,
+    )
 
-    in_std = torch.as_tensor(norm.input_std, dtype=pred.dtype, device=pred.device)
-    dUx = torch.autograd.grad(Ux.sum(), xb_req, create_graph=True)[0]
-    dUy = torch.autograd.grad(Uy.sum(), xb_req, create_graph=True)[0]
-    dp = torch.autograd.grad(p.sum(), xb_req, create_graph=True)[0]
-    dUx_dx = dUx[:, 0] / in_std[0]
-    dUy_dy = dUy[:, 1] / in_std[1]
-    dp_dx = dp[:, 0] / in_std[0]
-    dp_dy = dp[:, 1] / in_std[1]
+    u = (
+        pred[:, names["Ux"]] * out_std[names["Ux"]]
+        + out_mean[names["Ux"]]
+    )
+    v = (
+        pred[:, names["Uy"]] * out_std[names["Uy"]]
+        + out_mean[names["Uy"]]
+    )
+    p = (
+        pred[:, names["p"]] * out_std[names["p"]]
+        + out_mean[names["p"]]
+    )
 
-    nu = xb_req[:, nu_index] * in_std[nu_index] + torch.as_tensor(norm.input_mean[nu_index], device=xb_req.device)
-    rho = xb_req[:, rho_index] * in_std[rho_index] + torch.as_tensor(norm.input_mean[rho_index], device=xb_req.device)
-    continuity = dUx_dx + dUy_dy
-    momentum_x = Ux * dUx_dx + dp_dx / rho.clamp_min(1e-9)
-    momentum_y = Uy * dUy_dy + dp_dy / rho.clamp_min(1e-9)
-    scale = (nu.abs().mean() + 1e-6).detach()
-    return weight * (continuity.square().mean() + scale * (momentum_x.square().mean() + momentum_y.square().mean()))
+    # Input coordinates are normalized, so apply the chain rule to obtain
+    # derivatives with respect to dimensional x and y.
+    in_std = torch.as_tensor(
+        norm.input_std,
+        dtype=pred.dtype,
+        device=pred.device,
+    )
+    in_mean = torch.as_tensor(
+        norm.input_mean,
+        dtype=pred.dtype,
+        device=pred.device,
+    )
+
+    grad_u = torch.autograd.grad(
+        u.sum(),
+        xb_req,
+        create_graph=True,
+        retain_graph=True,
+    )[0]
+    grad_v = torch.autograd.grad(
+        v.sum(),
+        xb_req,
+        create_graph=True,
+        retain_graph=True,
+    )[0]
+    grad_p = torch.autograd.grad(
+        p.sum(),
+        xb_req,
+        create_graph=True,
+    )[0]
+
+    du_dx = grad_u[:, 0] / in_std[0]
+    du_dy = grad_u[:, 1] / in_std[1]
+    dv_dx = grad_v[:, 0] / in_std[0]
+    dv_dy = grad_v[:, 1] / in_std[1]
+    dp_dx = grad_p[:, 0] / in_std[0]
+    dp_dy = grad_p[:, 1] / in_std[1]
+
+    rho = xb_req[:, rho_index] * in_std[rho_index] + in_mean[rho_index]
+    rho = rho.clamp_min(1e-9)
+
+    continuity = du_dx + dv_dy
+    momentum_x = u * du_dx + v * du_dy + dp_dx / rho
+    momentum_y = u * dv_dx + v * dv_dy + dp_dy / rho
+
+    physics_loss = (
+        continuity.square().mean()
+        + momentum_x.square().mean()
+        + momentum_y.square().mean()
+    )
+
+    return weight * physics_loss
 
 
 def train_point_model(args, model_name: str):
@@ -127,7 +208,15 @@ def train_point_model(args, model_name: str):
             mask = torch.ones(pred.shape[0], 1, device=device)
             loss = masked_loss(torch, pred, yb, mask, train_store.normalization, args.bce_weight)
             if model_name == "pinn":
-                loss = loss + pinn_residual_loss(torch, model, xb, train_store.normalization, targets, nu_index, rho_index, args.physics_weight)
+                loss = loss + pinn_residual_loss(
+    torch,
+    model,
+    xb,
+    train_store.normalization,
+    targets,
+    rho_index,
+    args.physics_weight,
+)
             opt.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
