@@ -91,7 +91,7 @@ run_evaluate() {
   "$PYTHON" scripts/aggregate_multiseed_results.py --result-dir "$RESULT_DIR" --run-dir "$RUN_DIR"
   "$PYTHON" scripts/visualize_model_predictions.py \
     --run-dir "$RUN_DIR/seed_7" --data-dir "$DATA_DIR" --field p \
-    --case case_179 --num-cases 1 --output-dir "$ROOT/figures/revised_model_predictions_test"
+    --case case_339 --num-cases 1 --output-dir "$ROOT/figures/revised_model_predictions_test"
 }
 
 run_optimize() {
