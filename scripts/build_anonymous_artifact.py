@@ -13,10 +13,12 @@ ROOT = Path(__file__).resolve().parents[1]
 TEXT_EXTENSIONS = {".md", ".txt", ".py", ".sh", ".yaml", ".yml", ".json", ".toml", ".csv"}
 EXCLUDED_PARTS = {".git", ".venv", "output", "papers", "anonymous_artifact", "__pycache__", ".matplotlib-cache"}
 REPLACEMENTS = {
+    "https://github.com/aaravvd/hydrofoil-neural-surrogates": "ANONYMOUS_REPOSITORY_URL",
     "Aarav Dixit": "Anonymous Authors",
+    "family-names: Dixit": "family-names: Anonymous",
+    "given-names: Aarav": "given-names: Authors",
     "aaravdixit": "anonymous",
     "aaravvd": "anonymous",
-    "https://github.com/aaravvd/hydrofoil-neural-surrogates": "ANONYMOUS_REPOSITORY_URL",
     "10.5281/zenodo.21845241": "ANONYMOUS_DATA_URL",
 }
 
@@ -24,8 +26,8 @@ REPLACEMENTS = {
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build a sanitized, sub-100 MB double-blind review artifact.")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "output" / "anonymous_artifact")
-    parser.add_argument("--run-dir", type=Path, default=ROOT / "training_runs" / "revised")
-    parser.add_argument("--result-dir", type=Path, default=ROOT / "paper_results" / "revised")
+    parser.add_argument("--run-dir", type=Path, default=ROOT / "training_runs" / "full_rans")
+    parser.add_argument("--result-dir", type=Path, default=ROOT / "paper_results" / "full_rans")
     parser.add_argument("--data-dir", type=Path, default=ROOT / "corrected_production" / "data" / "processed_grids")
     args = parser.parse_args()
 
@@ -34,8 +36,8 @@ def main() -> None:
         shutil.rmtree(bundle)
     bundle.mkdir(parents=True)
     copy_source(bundle)
-    copy_tree_sanitized(args.run_dir, bundle / "training_runs" / "revised")
-    copy_tree_sanitized(args.result_dir, bundle / "paper_results" / "revised")
+    copy_tree_sanitized(args.run_dir, bundle / "training_runs" / "full_rans")
+    copy_tree_sanitized(args.result_dir, bundle / "paper_results" / "full_rans")
     copy_test_data(args.data_dir, bundle / "data" / "test_grids")
     write_readme(bundle)
     assert_anonymous(bundle)

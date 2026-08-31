@@ -12,4 +12,4 @@ identifiers:
   - type: doi
     value: "10.5281/zenodo.21845241"
     description: "Archived CFD dataset and trained model checkpoints"
-abstract: "Code and reproducibility workflow for benchmarking CNN-U-Net, physics-regularized MLP, FNO, and DeepONet surrogates for hydrofoil RANS flow, cavitation-risk screening, and shape optimization."
+abstract: "Code and reproducibility workflow for benchmarking CNN-U-Net, a physics-informed neural network, FNO, and DeepONet surrogates for hydrofoil RANS flow, cavitation-risk screening, and shape optimization."

@@ -1,0 +1,5 @@
+cases_timed,median_inference_seconds_per_case,median_openfoam_execution_seconds_per_case,model,note,speedup_vs_openfoam
+20,0.043351383350091054,5.09,unet,OpenFOAM time parsed from log.simpleFoam ExecutionTime; inference predicts pressure field only for timing.,117.41263153922651
+20,0.03604215834930073,5.09,fno,OpenFOAM time parsed from log.simpleFoam ExecutionTime; inference predicts pressure field only for timing.,141.2235069462413
+20,0.03852481874928344,5.09,deeponet,OpenFOAM time parsed from log.simpleFoam ExecutionTime; inference predicts pressure field only for timing.,132.12262030680347
+20,0.017197477049194276,5.09,pinn,OpenFOAM time parsed from log.simpleFoam ExecutionTime; inference predicts pressure field only for timing.,295.9736469157534

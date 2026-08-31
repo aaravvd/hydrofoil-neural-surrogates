@@ -15,7 +15,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 MODEL_ORDER = ["unet", "pinn", "fno", "deeponet"]
-LABELS = {"unet": "CNN-U-Net", "pinn": "Physics-regularized network", "fno": "FNO", "deeponet": "DeepONet"}
+LABELS = {"unet": "CNN-U-Net", "pinn": "PINN", "fno": "FNO", "deeponet": "DeepONet"}
 
 
 def main() -> None:

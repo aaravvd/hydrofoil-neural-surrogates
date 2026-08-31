@@ -16,6 +16,14 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
+MODEL_LABELS = {
+    "unet": "CNN-U-Net",
+    "pinn": "PINN",
+    "fno": "FNO",
+    "deeponet": "DeepONet",
+}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Plot comparable training and validation loss histories.")
     parser.add_argument("--run-dir", type=Path, default=ROOT / "training_runs")
@@ -44,8 +52,9 @@ def main() -> None:
     fig, axes = plt.subplots(1, 2, figsize=(10, 4), constrained_layout=True)
     for model, history in histories.items():
         epochs = [point["epoch"] for point in history]
-        axes[0].plot(epochs, [point["train_loss"] for point in history], label=model)
-        axes[1].plot(epochs, [point["val_loss"] for point in history], label=model)
+        label = MODEL_LABELS.get(model, model)
+        axes[0].plot(epochs, [point["train_loss"] for point in history], label=label)
+        axes[1].plot(epochs, [point["val_loss"] for point in history], label=label)
     for ax, title in zip(axes, ["Training loss", "Validation loss"]):
         ax.set_yscale("log")
         ax.set_xlabel("Epoch")

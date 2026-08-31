@@ -70,6 +70,6 @@ Objective: maximize surrogate `CL / abs(CD)` with penalties for cavitation-margi
 
 When checkpoints include direct OpenFOAM `Cl` and `Cd` targets, ranking uses those outputs; older checkpoints fall back to a pressure-only grid integral. In either case, top candidates should be re-run in OpenFOAM before making any hydrodynamic performance claim. Random airfoils are out-of-distribution relative to the current NACA-heavy training set, so they are best presented as a stress test and future validation target.
 
-## Recommended AI4S Framing
+## Scientific Workflow Context
 
 Use this section to show downstream scientific workflow value: surrogate field prediction enables rapid screening of hydrofoil design candidates under cavitation-risk constraints, while expensive OpenFOAM is reserved for final validation of the top-ranked designs.

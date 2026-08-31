@@ -8,9 +8,9 @@ PYTHON="${PYTHON:-$ROOT/.venv/bin/python}"
 STAGE="${1:-all}"
 DATA_DIR="$ROOT/corrected_production/data/processed_grids"
 FOAM_DIR="$ROOT/corrected_production/openfoam_cases"
-RUN_DIR="$ROOT/training_runs/revised"
-RESULT_DIR="$ROOT/paper_results/revised"
-OPT_DIR="$ROOT/hso_results/revised"
+RUN_DIR="$ROOT/training_runs/full_rans"
+RESULT_DIR="$ROOT/paper_results/full_rans"
+OPT_DIR="$ROOT/hso_results/full_rans"
 CFD_OPT_DIR="$ROOT/hso_results/corrected/openfoam_baseline"
 TARGETS="Ux,Uy,p,nut,k,omega,Cp,cavitation_margin,Cl,Cd"
 
@@ -119,22 +119,12 @@ run_optimize() {
 }
 
 run_papers() {
-  local paper
-  for paper in ai4s26 sim2science26; do
-    (cd "$ROOT/papers/$paper" && \
-      TECTONIC_CACHE_DIR="$ROOT/.cache/tectonic" tectonic main.tex \
-        --keep-logs --keep-intermediates)
-  done
-  mkdir -p "$ROOT/output/pdf"
-  cp "$ROOT/papers/ai4s26/main.pdf" \
-    "$ROOT/output/pdf/ai4s26_hydrofoil_surrogate_optimization_draft.pdf"
+  (cd "$ROOT/papers/sim2science26" && \
+    TECTONIC_CACHE_DIR="$ROOT/.cache/tectonic" tectonic main.tex \
+      --keep-logs --keep-intermediates)
+  mkdir -p "$ROOT/output/pdf/sim2science26"
   cp "$ROOT/papers/sim2science26/main.pdf" \
-    "$ROOT/output/pdf/sim2science26_imperfect_cfd_hydrofoil_draft.pdf"
-  mkdir -p "$ROOT/output/pdf/ai4s26" "$ROOT/output/pdf/sim2science26"
-  cp "$ROOT/papers/ai4s26/main.pdf" \
-    "$ROOT/output/pdf/ai4s26/hydrofoil_surrogate_benchmark_ai4s26.pdf"
-  cp "$ROOT/papers/sim2science26/main.pdf" \
-    "$ROOT/output/pdf/sim2science26/hydrofoil_surrogate_benchmark_sim2science26.pdf"
+    "$ROOT/output/pdf/sim2science26/nips26sim2sci_full_rans_pinn.pdf"
 }
 
 case "$STAGE" in

@@ -199,7 +199,7 @@ def plot_predictions(plot_data: dict, field: str, truth: np.ndarray, predictions
     for col, (name, arr) in enumerate(zip(names, values)):
         model_label = {
             "unet": "CNN-U-Net",
-            "pinn": "Physics-reg. MLP",
+            "pinn": "PINN",
             "fno": "FNO",
             "deeponet": "DeepONet",
         }.get(name, name)

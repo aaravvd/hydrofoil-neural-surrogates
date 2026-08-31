@@ -25,13 +25,19 @@ def main() -> None:
     parser.add_argument("--output", type=Path, default=ROOT / "hso_results" / "corrected" / "optimized" / "openfoam_validation.csv")
     parser.add_argument("--jobs", type=int, default=4)
     parser.add_argument("--Re", type=float, default=500000.0)
+    parser.add_argument("--include-models", default=None, help="Optional comma-separated model filter.")
     args = parser.parse_args()
 
     rows = list(csv.DictReader(args.optimization_summary.open()))
+    included = {name.strip() for name in args.include_models.split(",")} if args.include_models else None
     winners = {}
     for row in rows:
+        if included is not None and row["model"] not in included:
+            continue
         if row["model"] not in winners or float(row["best_objective"]) > float(winners[row["model"]]["best_objective"]):
             winners[row["model"]] = row
+    if not winners:
+        raise SystemExit("No optimization winners match --include-models")
     args.artifact_root.mkdir(parents=True, exist_ok=True)
 
     def run(model, row):

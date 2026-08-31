@@ -73,12 +73,12 @@ without rerunning all OpenFOAM cases.
 ## Expected Outputs
 
 - `corrected_production/data/processed_grids/`: common-grid RANS cases
-- `training_runs/revised/seed_<seed>/<model>/best.pt`: selected checkpoints
-- `paper_results/revised/`: per-seed and mean/std final-test metrics
-- `hso_results/revised/seed_<seed>/`: all optimizer traces and selected designs
-- `hso_results/revised/grid_study/grid_convergence.csv`: key-design grid checks
+- `training_runs/full_rans/seed_<seed>/<model>/best.pt`: selected checkpoints
+- `paper_results/full_rans/`: per-seed and mean/std final-test metrics
+- `hso_results/full_rans/seed_<seed>/`: all optimizer traces and selected designs
+- `hso_results/full_rans/grid_study/grid_convergence.csv`: key-design grid checks
 - `hso_results/corrected/openfoam_baseline/`: matched direct-CFD optimization traces and winners
-- `papers/*/main.pdf`: compiled manuscripts
+- `papers/sim2science26/main.pdf`: compiled NeurIPS workshop manuscript
 
 The compact CSV, JSON, and figure outputs are versioned in GitHub. The full CFD
 dataset and checkpoint bundle are deposited on Zenodo so every reported table

@@ -35,6 +35,8 @@ hso_results/**/openfoam_validation/
 !/paper_results/corrected/**
 !/paper_results/revised/
 !/paper_results/revised/**
+!/paper_results/full_rans/
+!/paper_results/full_rans/**
 !/paper_results/corrected_results_report.md
 
 # LaTeX build products; source and final PDFs remain trackable.

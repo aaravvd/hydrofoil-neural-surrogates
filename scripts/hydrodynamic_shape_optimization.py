@@ -475,7 +475,7 @@ def write_report(path: Path, args, primary: str, best_by_model: dict[str, list[d
             "before making any hydrodynamic performance claim. Random airfoils are out-of-distribution relative to the "
             "current NACA-heavy training set, so they are best presented as a stress test and future validation target.",
             "",
-            "## Recommended AI4S Framing",
+            "## Scientific Workflow Context",
             "",
             "Use this section to show downstream scientific workflow value: surrogate field prediction enables rapid "
             "screening of hydrofoil design candidates under cavitation-risk constraints, while expensive OpenFOAM is "
