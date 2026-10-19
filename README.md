@@ -8,6 +8,11 @@ The code is released under the [MIT License](LICENSE). See
 [REPRODUCIBILITY.md](REPRODUCIBILITY.md) for the exact paper workflow,
 environment, output locations, and claim boundaries.
 
+The paper was accepted at the NeurIPS 2026 Sim2Science Workshop. The public
+camera-ready PDF is available at
+[`output/pdf/sim2science26/hydrofoil_surrogates_sim2science2026_camera_ready.pdf`](output/pdf/sim2science26/hydrofoil_surrogates_sim2science2026_camera_ready.pdf),
+with its LaTeX source in [`papers/sim2science26_camera_ready/`](papers/sim2science26_camera_ready/).
+
 Dataset and trained checkpoints: [Zenodo DOI 10.5281/zenodo.21845241](https://doi.org/10.5281/zenodo.21845241).
 
 The local workflow supports two modes:

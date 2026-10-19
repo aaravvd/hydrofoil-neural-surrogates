@@ -11,6 +11,7 @@ os.environ.setdefault("MPLCONFIGDIR", str(Path(__file__).resolve().parents[1] / 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,13 +32,15 @@ def main() -> None:
     traces = load_traces(args.input_dir)
     fig, axes = plt.subplots(3, 2, figsize=(8.0, 7.3), sharex=True)
     colors = {"0012": "#0072B2", "2412": "#D55E00", "4415": "#009E73"}
+    seed_styles = {"7": "-", "17": "--", "27": ":"}
     for ax, model in zip(axes.flat, MODEL_ORDER):
         for (seed, start), rows in sorted(traces[model].items()):
             objective = np.asarray([float(row["objective"]) for row in rows])
             best = np.maximum.accumulate(objective)
-            ax.plot(np.arange(1, len(best) + 1), best, color=colors[start], alpha=0.28, lw=0.9)
-        for start, color in colors.items():
-            ax.plot([], [], color=color, label=f"NACA {start}")
+            ax.plot(
+                np.arange(1, len(best) + 1), best,
+                color=colors[start], linestyle=seed_styles[seed], alpha=0.72, lw=1.05,
+            )
         ax.set_title(LABELS[model], fontsize=9)
         ax.set_ylabel("Best predicted $C_L/|C_D|$")
         ax.grid(alpha=0.22, linewidth=0.5)
@@ -51,8 +54,15 @@ def main() -> None:
     direct_ax.set_title("Direct OpenFOAM", fontsize=9)
     direct_ax.set_ylabel("Best CFD $C_L/|C_D|$")
     direct_ax.grid(alpha=0.22, linewidth=0.5)
-    axes.flat[5].axis("off")
-    axes[0, 0].legend(frameon=False, fontsize=7, ncol=3)
+    legend_ax = axes.flat[5]
+    legend_ax.axis("off")
+    start_handles = [Line2D([0], [0], color=color, lw=1.6, label=f"NACA {start}") for start, color in colors.items()]
+    seed_handles = [Line2D([0], [0], color="#333333", linestyle=style, lw=1.6, label=f"Seed {seed}") for seed, style in seed_styles.items()]
+    legend_ax.legend(
+        handles=start_handles + seed_handles, title="Color: initializer     Style: seed",
+        frameon=False, loc="center", ncol=2, fontsize=8, title_fontsize=8,
+        columnspacing=1.8, handlelength=2.5,
+    )
     for ax in [axes[1, 0], axes[1, 1], direct_ax]:
         ax.set_xlabel("Objective evaluations")
     fig.tight_layout()
