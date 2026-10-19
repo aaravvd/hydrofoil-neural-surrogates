@@ -13,7 +13,8 @@ camera-ready PDF is available at
 [`output/pdf/sim2science26/hydrofoil_surrogates_sim2science2026_camera_ready.pdf`](output/pdf/sim2science26/hydrofoil_surrogates_sim2science2026_camera_ready.pdf),
 with its LaTeX source in [`papers/sim2science26_camera_ready/`](papers/sim2science26_camera_ready/).
 
-Dataset and trained checkpoints: [Zenodo DOI 10.5281/zenodo.21845241](https://doi.org/10.5281/zenodo.21845241).
+Dataset, trained checkpoints, and compact result files:
+[Sim2Science 2026 camera-ready release](https://github.com/aaravvd/hydrofoil-neural-surrogates/releases/tag/sim2science2026-camera-ready).
 
 The local workflow supports two modes:
 
